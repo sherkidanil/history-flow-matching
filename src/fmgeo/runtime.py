@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import os
 import platform
@@ -72,7 +73,7 @@ def _probe_torch() -> dict[str, Any]:
             "selected_device": "cpu",
         }
 
-    import torch
+    torch = importlib.import_module("torch")
 
     cuda_available = bool(torch.cuda.is_available())
     mps_backend = getattr(torch.backends, "mps", None)
@@ -120,4 +121,3 @@ def probe_runtime(work_dir: str | Path, *, flow_command: str = "flow") -> dict[s
         },
         "process": {"executable": sys.executable},
     }
-
