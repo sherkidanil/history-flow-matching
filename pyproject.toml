@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fmgeo"
+version = "0.1.0"
+description = "Flow-matching parameterizations for geological ensemble inversion"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = []
+
+[project.scripts]
+fmgeo = "fmgeo.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fmgeo"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
