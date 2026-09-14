@@ -1,0 +1,43 @@
+# Private project context and credentials
+.env
+SOUL.md
+repo.md
+MEMORY/
+REPORTS/
+TASKS/
+docs/plans/
+
+# Isolated development worktrees
+.worktrees/
+
+# Python and uv
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+
+# Heavy or acquired data; retain provenance manifests
+data/*
+!data/MANIFEST.json
+artifacts/*
+!artifacts/MANIFEST.json
+results/raw/*
+!results/raw/.gitkeep
+
+# Simulator scratch and restart output
+scratch/
+*.UNRST
+*.X[0-9][0-9][0-9][0-9]
+
