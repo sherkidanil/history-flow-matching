@@ -34,6 +34,7 @@ class ForwardResult:
 
 
 Extractor = Callable[[Path], dict[str, object]]
+Preparer = Callable[[Path], None]
 
 
 def _disk_anchor(path: Path) -> Path:
@@ -101,6 +102,7 @@ def run_simulator(
     cache_dir: str | Path,
     cache_key: str,
     extractor: Extractor,
+    prepare: Preparer | None = None,
     timeout: float = 600.0,
     min_free_disk_gb: float = 20.0,
     disk_check_path: str | Path | None = None,
@@ -123,6 +125,8 @@ def run_simulator(
     started = time.perf_counter()
     result: ForwardResult
     try:
+        if prepare is not None:
+            prepare(workdir)
         completed = subprocess.run(
             list(command),
             cwd=workdir,

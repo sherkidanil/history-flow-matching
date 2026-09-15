@@ -112,3 +112,25 @@ def test_success_is_cached_without_simulator_files(tmp_path: Path) -> None:
     cache_files = list((tmp_path / "cache").iterdir())
     assert [path.suffix for path in cache_files] == [".json"]
     assert list((tmp_path / "work").iterdir()) == []
+
+
+def test_prepare_callback_populates_isolated_workdir(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path / "prepared.py",
+        "import json\nfrom pathlib import Path\n"
+        "value = float(Path('INPUT').read_text())\n"
+        "Path('RESULT.json').write_text(json.dumps({'d': [value], 'FOPT_16.5y': value}))\n",
+    )
+
+    result = run_simulator(
+        [sys.executable, str(script)],
+        work_root=tmp_path / "work",
+        cache_dir=tmp_path / "cache",
+        cache_key="e" * 64,
+        extractor=extract_json,
+        prepare=lambda workdir: (workdir / "INPUT").write_text("12.5"),
+        min_free_disk_gb=0,
+    )
+
+    assert result.status == "ok"
+    assert result.d == (12.5,)

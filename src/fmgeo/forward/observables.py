@@ -33,7 +33,9 @@ def read_summary_vectors(
     vectors: dict[str, NDArray[np.float64]] = {}
     expected_length: int | None = None
     for key in keys:
-        if key not in summary:
+        # ResData exposes TIME as a computed vector but does not list it as a
+        # regular summary keyword on every supported release.
+        if key != "TIME" and key not in summary:
             raise KeyError(f"summary key not found: {key}")
         values = np.asarray(summary.numpy_vector(key), dtype=np.float64)
         if values.ndim != 1 or not np.all(np.isfinite(values)):

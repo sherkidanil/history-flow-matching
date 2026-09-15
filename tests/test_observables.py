@@ -88,3 +88,22 @@ def test_read_summary_vectors_rejects_missing_or_misaligned_data(
         read_summary_vectors(tmp_path / "CASE", ["FOPT", "MISSING"])
     with pytest.raises(ValueError, match="identical lengths"):
         read_summary_vectors(tmp_path / "CASE", ["FOPT", "SHORT"])
+
+
+def test_read_summary_vectors_allows_resdata_virtual_time_key(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    class FakeSummary:
+        def __contains__(self, key: str) -> bool:
+            return False
+
+        def numpy_vector(self, key: str) -> np.ndarray:
+            if key != "TIME":
+                raise KeyError(key)
+            return np.asarray([30.0, 60.0])
+
+    monkeypatch.setattr(observables, "_load_resdata_summary", lambda _: FakeSummary())
+
+    result = read_summary_vectors(tmp_path / "CASE", ["TIME"])
+
+    np.testing.assert_array_equal(result["TIME"], [30.0, 60.0])
