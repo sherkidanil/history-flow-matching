@@ -1,6 +1,36 @@
 {
   "artifacts": [
     {
+      "config_hash": "f6c92299a3b963e1bce9cdebf124bdc2708346a8919b6152e919693ff35067d8",
+      "created_at": "2026-09-15T10:11:56.089513Z",
+      "dtype": "float32",
+      "git_commit": "213d8b3e4a72ef2faa5e3f7d733ca1323ee69308",
+      "path": "artifacts/egg_augmentation_5000.h5",
+      "sha256": "e03ae3a9bfc338b0c972ed4d2a7b4e9e2dfa7cc4c9c80f6223a125386797a4b7",
+      "shape": [
+        5000,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 201390899
+    },
+    {
+      "config_hash": "2c58f62aabcc8fdb7c8633ed72edfcbd9375549cc22976b39e30783e5a48409a",
+      "created_at": "2026-09-15T10:12:08.318979Z",
+      "dtype": "float32",
+      "git_commit": "213d8b3e4a72ef2faa5e3f7d733ca1323ee69308",
+      "path": "artifacts/egg_procedural_5000.h5",
+      "sha256": "2b350762a579052225a6cb30ff4b70333488eb8b0e36e047d21d4e67de52b93a",
+      "shape": [
+        5000,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 283182390
+    },
+    {
       "config_hash": "ca96693f7c033d7083192665f244fcc0d2366943886b83a14661e3dc29e46e64",
       "created_at": "2026-09-15T09:31:58.658118Z",
       "dtype": "float32",
