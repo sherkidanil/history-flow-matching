@@ -20,7 +20,11 @@ from fmgeo.forward.egg import (
     parse_egg_well_locations,
 )
 from fmgeo.inverse.egg import load_egg_inversion_config
-from fmgeo.metrics.egg import bimodality_coefficient, egg_well_connectivity
+from fmgeo.metrics.egg import (
+    bimodality_coefficient,
+    egg_cluster_size_summary,
+    egg_well_connectivity,
+)
 
 
 def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
@@ -88,6 +92,28 @@ def _breakthrough_row(
     }
 
 
+def _cluster_row(
+    *,
+    strategy: str,
+    category: str,
+    fields: np.ndarray,
+    threshold: float,
+    source: Path,
+    source_hash: str,
+    derived_git_commit: str,
+) -> dict[str, object]:
+    summary = egg_cluster_size_summary(fields >= threshold)
+    return {
+        "strategy": strategy,
+        "category": category,
+        **summary,
+        "threshold_logk": threshold,
+        "source_artifact": source.as_posix(),
+        "source_artifact_sha256": source_hash,
+        "derived_git_commit": derived_git_commit,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
@@ -100,6 +126,7 @@ def main() -> int:
     parser.add_argument("--inversion-report", type=Path, action="append", required=True)
     parser.add_argument("--connectivity-output", type=Path, required=True)
     parser.add_argument("--bimodality-output", type=Path, required=True)
+    parser.add_argument("--cluster-output", type=Path, required=True)
     parser.add_argument("--breakthrough-output", type=Path, required=True)
     parser.add_argument("--summary-output", type=Path, required=True)
     args = parser.parse_args()
@@ -140,6 +167,7 @@ def main() -> int:
 
     connectivity_rows: list[dict[str, object]] = []
     bimodality_rows: list[dict[str, object]] = []
+    cluster_rows: list[dict[str, object]] = []
     for category in ("prior", "raw", "pca", "fm"):
         path, digest, fields, _ = artifacts[category]
         connections = egg_well_connectivity(fields, threshold=threshold, wells=wells)
@@ -168,6 +196,17 @@ def main() -> int:
                 "derived_git_commit": derived_git_commit,
             }
         )
+        cluster_rows.append(
+            _cluster_row(
+                strategy=strategy,
+                category=category,
+                fields=fields,
+                threshold=threshold,
+                source=path,
+                source_hash=digest,
+                derived_git_commit=derived_git_commit,
+            )
+        )
     truth_connections = egg_well_connectivity(truth, threshold=threshold, wells=wells)
     truth_hash = sha256_file(truth_source)
     for (injector, producer), probability in truth_connections.items():
@@ -194,6 +233,17 @@ def main() -> int:
             "source_artifact_sha256": truth_hash,
             "derived_git_commit": derived_git_commit,
         }
+    )
+    cluster_rows.append(
+        _cluster_row(
+            strategy=strategy,
+            category="truth",
+            fields=truth,
+            threshold=threshold,
+            source=truth_source,
+            source_hash=truth_hash,
+            derived_git_commit=derived_git_commit,
+        )
     )
 
     truth_summary = extract_egg_observations(
@@ -257,6 +307,7 @@ def main() -> int:
         )
     _write_csv(args.connectivity_output, connectivity_rows)
     _write_csv(args.bimodality_output, bimodality_rows)
+    _write_csv(args.cluster_output, cluster_rows)
     _write_csv(args.breakthrough_output, breakthrough_rows)
     _write_csv(args.summary_output, summary_rows)
     print(
@@ -264,6 +315,7 @@ def main() -> int:
             {
                 "connectivity_rows": len(connectivity_rows),
                 "bimodality_rows": len(bimodality_rows),
+                "cluster_rows": len(cluster_rows),
                 "breakthrough_rows": len(breakthrough_rows),
                 "summary_rows": len(summary_rows),
             },

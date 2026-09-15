@@ -173,15 +173,19 @@ uv run python scripts/m8_build_egg_inversion_tables.py \
   --inversion-report results/raw/egg_inversion_augmentation_fm.json \
   --connectivity-output results/tables/egg_connectivity.csv \
   --bimodality-output results/tables/egg_bimodality.csv \
+  --cluster-output results/tables/egg_cluster_sizes.csv \
   --breakthrough-output results/tables/egg_breakthrough.csv \
   --summary-output results/tables/egg_inversion_summary.csv
 
 uv run python scripts/m8_plot_egg_inversion.py \
   --config configs/egg/inversion.yaml \
+  --truth-case scratch/egg_truth_perm100/EGG \
   --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
   --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
   --inversion artifacts/egg_inversion_augmentation_raw.h5 \
   --inversion artifacts/egg_inversion_augmentation_pca.h5 \
   --inversion artifacts/egg_inversion_augmentation_fm.h5 \
-  --output results/figures/egg_posterior_comparison.svg
+  --output results/figures/egg_posterior_comparison.svg \
+  --water-cut-output results/figures/egg_water_cut_forecast.svg
 ```
