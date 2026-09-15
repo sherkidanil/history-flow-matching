@@ -6,6 +6,7 @@ import torch
 from torch import nn
 
 from fmgeo.param.flowmatching.model_unet3d import (
+    SelfAttention3D,
     SinusoidalTimeEmbedding,
     UNet3D,
 )
@@ -80,6 +81,14 @@ def test_time_embedding_and_models_preserve_punq_shape() -> None:
 
     assert unet(x, time).shape == x.shape
     assert uno(x, time).shape == x.shape
+
+
+def test_unet_attention_is_restricted_to_coarsest_resolution() -> None:
+    model = UNet3D(in_channels=1, base_channels=4, time_dim=16)
+
+    attention_blocks = [module for module in model.modules() if isinstance(module, SelfAttention3D)]
+
+    assert len(attention_blocks) == 1
 
 
 def test_seeded_batches_repeat_and_change_by_epoch() -> None:

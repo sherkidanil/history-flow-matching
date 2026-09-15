@@ -13,12 +13,14 @@ source:
 model:
   kind: unet3d
   in_channels: 1
-  base_channels: 32
-  time_dim: 128
+    base_channels: 16
+    time_dim: 64
   coarse_attention_only: true
 training:
   batch_size: 16
-  epochs: 200
+  # 16 full passes = 5,008 optimizer steps at 5,000 samples / batch 16.
+  # ASSUMED compute budget fixed after the measured A100 pilot.
+  epochs: 16
   learning_rate: 0.0002
   weight_decay: 0.00001
   gradient_clip_norm: 1.0

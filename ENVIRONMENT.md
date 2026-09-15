@@ -38,6 +38,14 @@ cluster with `scikit-mps` and NumPy 1.26.4. A 16-realization, full-grid
 time (404.30 seconds aggregate user CPU). The accepted path therefore uses an
 explicit source-built executable directory; the package binary is rejected.
 
+Egg FM training uses the existing
+`pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime` cluster image with dependencies
+added to an ephemeral environment by `uv`. On an A100 80 GB, a full-grid
+batch-16 step with the final coarse-attention-only U-Net (base width 16, 772,241
+parameters) took 1.83 seconds and peaked at 1,044,154,880 allocated CUDA bytes.
+The shared 16-epoch budget is therefore 5,008 optimizer steps per strategy;
+this budget was fixed before fitting any of the three scientific models.
+
 <!-- BEGIN AUTO-GENERATED M0 PROBE -->
 ## Latest measured M0 probe
 
