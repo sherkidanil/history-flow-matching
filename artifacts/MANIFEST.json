@@ -1,5 +1,20 @@
 {
-  "schema_version": 1,
-  "artifacts": []
+  "artifacts": [
+    {
+      "config_hash": "ca96693f7c033d7083192665f244fcc0d2366943886b83a14661e3dc29e46e64",
+      "created_at": "2026-09-15T09:31:58.658118Z",
+      "dtype": "float32",
+      "git_commit": "8978c7f753bd4495fcde71d9123e95d4e2631495",
+      "path": "artifacts/punq_prior_256.h5",
+      "sha256": "a5a03ddc32e441becb70f61699c3984b5cf85d6156ef295f2416df13f20d6622",
+      "shape": [
+        256,
+        5,
+        28,
+        19
+      ],
+      "size_bytes": 1730637
+    }
+  ],
+  "schema_version": 1
 }
-
