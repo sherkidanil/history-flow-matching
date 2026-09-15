@@ -29,6 +29,15 @@ two-step CPU training smoke test on eight reduced-prior realizations completed
 with finite losses; this is an implementation check, not a trained scientific
 model.
 
+For Egg MPS, the `scikit-mps` wheel's bundled executable failed on both
+available platforms: it is not arm64-compatible on the Mac and segfaulted on
+Linux. MPSlib built from official source commit
+`a47718fc0e2c7c6f3411de429e51f1267b5d7f7c` succeeded on the Linux x86_64
+cluster with `scikit-mps` and NumPy 1.26.4. A 16-realization, full-grid
+`mps_snesim_tree` pilot using 16 processes completed in 52.46 seconds wall
+time (404.30 seconds aggregate user CPU). The accepted path therefore uses an
+explicit source-built executable directory; the package binary is rejected.
+
 <!-- BEGIN AUTO-GENERATED M0 PROBE -->
 ## Latest measured M0 probe
 

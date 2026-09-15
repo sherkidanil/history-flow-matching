@@ -149,3 +149,22 @@ def write_manifest_atomic(path: str | Path, records: Sequence[ArtifactRecord]) -
     finally:
         if temporary_name is not None:
             Path(temporary_name).unlink(missing_ok=True)
+
+
+def update_manifest_atomic(path: str | Path, records: Sequence[ArtifactRecord]) -> None:
+    """Upsert records by artifact path while retaining existing valid entries."""
+
+    destination = Path(path)
+    existing: list[ArtifactRecord] = []
+    if destination.exists():
+        payload = json.loads(destination.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+            raise ValueError("existing artifact manifest has an unsupported schema")
+        items = payload.get("artifacts")
+        if not isinstance(items, list):
+            raise ValueError("existing artifact manifest must contain an artifacts list")
+        existing = [ArtifactRecord.model_validate(item) for item in items]
+
+    by_path = {record.path: record for record in existing}
+    by_path.update({record.path: record for record in records})
+    write_manifest_atomic(destination, [by_path[name] for name in sorted(by_path)])

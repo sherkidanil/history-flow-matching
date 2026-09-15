@@ -5,5 +5,8 @@ dataset_count: 5000  # ASSUMED equal training-set budget for all three strategie
 heldout_indices: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # One-based, ASSUMED split.
 channel_quantile: 0.65  # ASSUMED facies threshold, calibrated on training active cells.
 backend: mpslib
-method: mps_genesim
+method: mps_snesim_tree
 conditioning_nodes: 36  # ASSUMED MPS search template budget.
+template_size_xyz: [12, 12, 3]  # ASSUMED 3D search template.
+multiple_grids: 2  # ASSUMED multiscale level count.
+workers: 32  # Measured cluster load left at least 48 of 64 CPUs available.

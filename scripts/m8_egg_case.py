@@ -17,7 +17,7 @@ from fmgeo.artifacts import (
     canonical_config_hash,
     create_artifact_record,
     sha256_file,
-    write_manifest_atomic,
+    update_manifest_atomic,
 )
 from fmgeo.config import StrictModel
 from fmgeo.grids import parse_numeric_keyword
@@ -46,6 +46,9 @@ class EggStrategyConfig(StrictModel):
     backend: Literal["mpslib"] | None = None
     method: Literal["mps_genesim", "mps_snesim_tree"] | None = None
     conditioning_nodes: int | None = Field(default=None, ge=1)
+    template_size_xyz: tuple[int, int, int] | None = None
+    multiple_grids: int | None = Field(default=None, ge=0)
+    workers: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
     def validate_strategy_fields(self) -> EggStrategyConfig:
@@ -56,7 +59,15 @@ class EggStrategyConfig(StrictModel):
                 "rotations",
                 "rotation_variogram_tolerance",
             ),
-            "mps": ("channel_quantile", "backend", "method", "conditioning_nodes"),
+            "mps": (
+                "channel_quantile",
+                "backend",
+                "method",
+                "conditioning_nodes",
+                "template_size_xyz",
+                "multiple_grids",
+                "workers",
+            ),
             "procedural": ("channel_quantile", "channel_width_cells", "channel_count"),
         }
         missing = [name for name in required[self.strategy] if getattr(self, name) is None]
@@ -167,6 +178,9 @@ def _prepare(
     if config.strategy == "mps":
         assert config.method is not None
         assert config.conditioning_nodes is not None
+        assert config.template_size_xyz is not None
+        assert config.multiple_grids is not None
+        assert config.workers is not None
         facies_training = np.asarray(training >= threshold, dtype=np.uint8)
         facies = generate_mps_realizations(
             facies_training,
@@ -175,6 +189,9 @@ def _prepare(
             method=config.method,
             conditioning_nodes=config.conditioning_nodes,
             executable_dir=mpslib_executable_dir,
+            template_size_xyz=config.template_size_xyz,
+            multiple_grids=config.multiple_grids,
+            workers=config.workers,
         )
         rng = np.random.default_rng(config.seed)
         generated = rng.normal(background_mean, background_std, facies.shape).astype(np.float32)
@@ -257,7 +274,7 @@ def main() -> int:
         config_hash=config_hash,
         git_commit=git_commit,
     )
-    write_manifest_atomic(args.manifest, [record])
+    update_manifest_atomic(args.manifest, [record])
     report = {
         "benchmark": "Egg",
         "strategy": config.strategy,

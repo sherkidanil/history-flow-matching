@@ -12,6 +12,7 @@ from fmgeo.artifacts import (
     canonical_config_hash,
     create_artifact_record,
     sha256_file,
+    update_manifest_atomic,
     write_manifest_atomic,
 )
 
@@ -85,3 +86,22 @@ def test_manifest_write_is_atomic_and_valid_json(tmp_path: Path) -> None:
     assert payload["artifacts"][0]["path"] == "ensemble.h5"
     assert list(tmp_path.glob(".MANIFEST.json.*.tmp")) == []
 
+
+def test_manifest_update_retains_other_artifacts(tmp_path: Path) -> None:
+    destination = tmp_path / "MANIFEST.json"
+    original = ArtifactRecord(
+        path="original.h5",
+        shape=(2,),
+        dtype="float32",
+        size_bytes=8,
+        sha256="a" * 64,
+        config_hash="b" * 64,
+        git_commit="0123456789abcdef",
+    )
+    added = original.model_copy(update={"path": "added.h5", "sha256": "c" * 64})
+    write_manifest_atomic(destination, [original])
+
+    update_manifest_atomic(destination, [added])
+
+    payload = json.loads(destination.read_text(encoding="utf-8"))
+    assert [item["path"] for item in payload["artifacts"]] == ["added.h5", "original.h5"]
