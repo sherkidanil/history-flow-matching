@@ -61,6 +61,22 @@
       "size_bytes": 57147612
     },
     {
+      "config_hash": "91c2172623047b68f8f96f0bd0fcac169bbad20d847d32fe91349a47fdb0510a",
+      "created_at": "2026-09-15T12:45:12.856221Z",
+      "dtype": "float32",
+      "git_commit": "ccc14b09e1323023f3f1fd7ec689c2770980b88d",
+      "path": "artifacts/egg_inversion_augmentation_raw.h5",
+      "sha256": "a61d18f63925df4e00e0edc9e0e93d6eba71df202f09fd565519a0f082d9bcef",
+      "shape": [
+        5,
+        100,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 69770032
+    },
+    {
       "config_hash": "2d1906d3a78e95237327fae58081c006e94695bcd9b709c3b1659a87287ddb46",
       "created_at": "2026-09-15T10:26:55.909738Z",
       "dtype": "torch.float32",
