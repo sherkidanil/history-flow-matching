@@ -27,7 +27,6 @@ from fmgeo.inverse.egg import (
     load_egg_inversion_config,
     run_egg_esmda,
 )
-from fmgeo.metrics.misfit import normalized_data_misfit
 from fmgeo.metrics.uq import coverage, forecast_quantiles
 from fmgeo.param.flowmatching.model_unet3d import UNet3D
 from fmgeo.param.flowmatching.sample import FlowTransform
@@ -271,10 +270,10 @@ def main() -> int:
     stage_reports: list[dict[str, object]] = []
     for index, stage in enumerate(stages):
         quantiles = forecast_quantiles(stage.forward.fopt)
-        misfits = [
-            normalized_data_misfit(observation, simulated, covariance)
-            for simulated in stage.forward.simulated_data
-        ]
+        misfits = np.mean(
+            ((stage.forward.simulated_data - observation[None, :]) / sigma[None, :]) ** 2,
+            axis=1,
+        )
         stage_reports.append(
             {
                 "stage": index,
