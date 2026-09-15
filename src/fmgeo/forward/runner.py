@@ -181,7 +181,7 @@ def run_simulator(
             returncode=None,
             stderr=stderr,
         )
-    except OSError as error:
+    except (OSError, ValueError) as error:
         result = ForwardResult(
             status="failed",
             d=None,

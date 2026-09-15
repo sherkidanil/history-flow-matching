@@ -134,3 +134,22 @@ def test_prepare_callback_populates_isolated_workdir(tmp_path: Path) -> None:
 
     assert result.status == "ok"
     assert result.d == (12.5,)
+
+
+def test_invalid_member_preparation_is_recorded_as_failure(tmp_path: Path) -> None:
+    def reject(_workdir: Path) -> None:
+        raise ValueError("invalid permeability member")
+
+    result = run_simulator(
+        ["command-that-must-not-run"],
+        work_root=tmp_path / "work",
+        cache_dir=tmp_path / "cache",
+        cache_key="f" * 64,
+        extractor=extract_json,
+        prepare=reject,
+        min_free_disk_gb=0,
+    )
+
+    assert result.status == "failed"
+    assert "invalid permeability member" in result.stderr
+    assert list((tmp_path / "work").iterdir()) == []
