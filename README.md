@@ -11,12 +11,13 @@ derived from provenance-bearing raw artifacts.
 
 ## Status
 
-The repository is under active development. The first milestone establishes a
-cross-platform `uv` environment and validates the available OPM Flow runtime.
+The repository is under active development. The cross-platform `uv`
+environment, benchmark validation, numerical foundations, and a storage-safe
+OPM Flow runner are implemented. M0 is verified against SPE1 with Flow 2026.04;
+measured details are in `ENVIRONMENT.md`.
 
 ## Development
 
 Python 3.11 or newer and [`uv`](https://docs.astral.sh/uv/) are required.
 Setup and experiment commands will be maintained in `REPRODUCE.md` as each
 milestone is validated.
-
