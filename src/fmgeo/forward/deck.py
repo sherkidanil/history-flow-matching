@@ -98,6 +98,12 @@ def strip_restart_output(deck: str) -> str:
             continue
         output.append(line)
     sanitized = "".join(output)
+    sanitized = re.sub(
+        r"(?ims)^[ \t]*RPTSOL[ \t]*$\s*(?=[^/]*\bRESTART\b)[^/]*/"
+        r"[ \t]*(?:\r?\n[ \t]*/[ \t]*)?",
+        "",
+        sanitized,
+    )
     assert_restart_disabled(sanitized)
     return sanitized
 
@@ -107,6 +113,9 @@ def assert_restart_disabled(deck: str) -> None:
     active = _active_text(deck)
     if re.search(r"(?im)^\s*RPTRST(?:\s|/|$)", active):
         raise RestartOutputEnabledError("active RPTRST request is forbidden")
+    for match in re.finditer(r"(?ims)^\s*RPTSOL\s*$\s*(.*?)/", active):
+        if re.search(r"(?i)\bRESTART\b", match.group(1)):
+            raise RestartOutputEnabledError("RPTSOL RESTART request is forbidden")
     for match in re.finditer(r"(?ims)^\s*RPTSCHED\s*$\s*(.*?)/", active):
         if re.search(r"(?i)\bRESTART\b", match.group(1)):
             raise RestartOutputEnabledError("RPTSCHED RESTART request is forbidden")

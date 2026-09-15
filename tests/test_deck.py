@@ -35,6 +35,21 @@ def test_restart_assertion_rejects_unsanitized_deck() -> None:
         assert_restart_disabled("SCHEDULE\nRPTRST\n BASIC=2 /\n")
 
 
+def test_solution_restart_request_is_removed_but_other_reports_remain() -> None:
+    deck = "SOLUTION\nRPTSOL\n RESTART=2 /\n/\nRPTSOL\n FIP=3 /\nSUMMARY\n"
+
+    sanitized = strip_restart_output(deck)
+
+    assert "RESTART=2" not in sanitized
+    assert "FIP=3" in sanitized
+    assert_restart_disabled(sanitized)
+
+
+def test_restart_assertion_rejects_rptsol_restart() -> None:
+    with pytest.raises(RestartOutputEnabledError, match="RPTSOL RESTART"):
+        assert_restart_disabled("SOLUTION\nRPTSOL\n RESTART=2 /\n")
+
+
 def test_ensure_summary_keywords_adds_only_missing_requests() -> None:
     deck = "RUNSPEC\nSUMMARY\nFOPR\nSCHEDULE\n"
 

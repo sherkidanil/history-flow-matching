@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import importlib
+import stat
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from fmgeo.priors.egg_augment import augment_crops, directional_rotation_allowed
+from fmgeo.priors.egg_io import write_egg_permeability_include
 from fmgeo.priors.egg_mps import MPSCapabilityError, generate_mps_realizations
 from fmgeo.priors.egg_procedural import generate_procedural_egg
 
@@ -103,3 +105,22 @@ def test_procedural_channels_are_connected_and_masked() -> None:
     assert np.all(first.facies[~active] == 255)
     assert np.all(first.logk[~active] == 0)
     assert first.has_spanning_channel
+
+
+def test_egg_permeability_include_round_trips_logk(tmp_path: Path) -> None:
+    logk = np.log(np.linspace(10.0, 1000.0, 7 * 60 * 60)).reshape(7, 60, 60)
+    output = tmp_path / "mDARCY.INC"
+
+    write_egg_permeability_include(logk, output)
+
+    text = output.read_text(encoding="utf-8")
+    values = np.asarray(text.split("PERMX", maxsplit=1)[1].split("/", maxsplit=1)[0].split(), float)
+    np.testing.assert_allclose(values, np.exp(logk.ravel()), rtol=1e-6)
+    assert "'PERMX' 'PERMY'" in text
+    assert "'PERMZ' 0.1" in text
+    assert stat.S_IMODE(output.stat().st_mode) == 0o644
+
+
+def test_egg_permeability_include_rejects_wrong_shape(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="shape"):
+        write_egg_permeability_include(np.zeros((1, 2, 3)), tmp_path / "mDARCY.INC")
