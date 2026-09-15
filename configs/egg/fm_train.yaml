@@ -13,8 +13,8 @@ source:
 model:
   kind: unet3d
   in_channels: 1
-    base_channels: 16
-    time_dim: 64
+  base_channels: 16
+  time_dim: 64
   coarse_attention_only: true
 training:
   batch_size: 16

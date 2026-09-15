@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import json
 import subprocess
 import sys
@@ -8,6 +9,19 @@ from pathlib import Path
 import h5py  # type: ignore[import-untyped]
 import numpy as np
 import yaml
+
+
+def test_repository_egg_fm_config_is_valid() -> None:
+    repository = Path(__file__).parents[1]
+    sys.path.insert(0, str(repository / "scripts"))
+    try:
+        module = importlib.import_module("m8_train_egg")
+        config = module.load_fm_config(repository / "configs/egg/fm_train.yaml")
+    finally:
+        sys.path.pop(0)
+
+    assert config.data.training_samples == 5000
+    assert config.training.epochs == 16
 
 
 def test_egg_training_script_enforces_budget_and_writes_checkpoint(tmp_path: Path) -> None:
