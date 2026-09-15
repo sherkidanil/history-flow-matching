@@ -9,6 +9,51 @@ class RestartOutputEnabledError(ValueError):
     """Raised when a deck can request mass-run restart output."""
 
 
+def render_punq_opm_compatibility(deck: str) -> str:
+    """Add explicit table/aquifer dimensions required by current OPM Flow."""
+    records = (
+        ("TABDIMS", "TABDIMS\n  1 1 50 50 /\n\n"),
+        ("AQUDIMS", "AQUDIMS\n  2 100 1 36 2 100 /\n\n"),
+        ("NUMRES", "NUMRES\n  1 /\n\n"),
+        ("UNIFOUT", "UNIFOUT\n\n"),
+    )
+    active = _active_text(deck)
+    missing = [
+        record
+        for keyword, record in records
+        if not re.search(rf"(?im)^\s*{keyword}\s*$", active)
+    ]
+    rendered = deck
+    if missing:
+        grid = re.search(r"(?im)^\s*GRID\s*(?:\r?\n|$)", rendered)
+        if grid is None:
+            raise ValueError("PUNQ deck must contain a GRID section")
+        rendered = rendered[: grid.start()] + "".join(missing) + rendered[grid.start() :]
+
+    aquct = re.search(
+        r"(?ims)(^\s*AQUCT\s*$)(.*?)(^\s*AQUANCON\s*$)", rendered
+    )
+    if aquct is not None:
+        body_lines = [line.strip() for line in aquct.group(2).splitlines() if line.strip()]
+        if not body_lines or body_lines[-1] != "/":
+            replacement = aquct.group(1) + aquct.group(2).rstrip() + "\n/\n\n" + aquct.group(3)
+            rendered = rendered[: aquct.start()] + replacement + rendered[aquct.end() :]
+    rendered = re.sub(
+        r"(?im)('PRO\*'\s+'SHUT')\s+6\*\s+120(?:\.0+)?\s*/",
+        r"\1 'ORAT' 100.0 4* 120.0 /",
+        rendered,
+        count=1,
+    )
+    rendered = re.sub(
+        r"(?ims)^\s*WCUTBACK\s*$.*?^\s*/\s*$",
+        "-- FMGEO: WCUTBACK removed; OPM Flow 2026.04 does not implement it.\n",
+        rendered,
+        count=1,
+    )
+    rendered = re.sub(r"(?im)^\s*SEPARATE\s*$\s*", "", rendered, count=1)
+    return rendered
+
+
 def ensure_summary_keywords(deck: str, keywords: list[str] | tuple[str, ...]) -> str:
     """Add missing field summary requests at the start of the SUMMARY section."""
     normalized = [keyword.strip().upper() for keyword in keywords]

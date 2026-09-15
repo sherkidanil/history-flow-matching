@@ -4,7 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from fmgeo.grids import BenchmarkValidationError, parse_deck_metadata, validate_benchmark
+from fmgeo.grids import (
+    BenchmarkValidationError,
+    parse_deck_metadata,
+    parse_numeric_keyword,
+    validate_benchmark,
+)
 
 
 def test_parser_expands_actnum_repeats_and_reads_wells(tmp_path: Path) -> None:
@@ -44,6 +49,15 @@ def test_grid_dimensions_can_come_from_specgrid_include(tmp_path: Path) -> None:
     assert metadata.active_cells == 4
 
 
+def test_numeric_keyword_parser_expands_repeats(tmp_path: Path) -> None:
+    include = tmp_path / "PROPS.INC"
+    include.write_text("PORO\n 2*0.1 0.2 /\n", encoding="utf-8")
+
+    values = parse_numeric_keyword(include, "PORO")
+
+    assert values == (0.1, 0.1, 0.2)
+
+
 def test_benchmark_validation_reports_exact_mismatch(tmp_path: Path) -> None:
     deck = tmp_path / "MODEL.DATA"
     deck.write_text(
@@ -59,4 +73,3 @@ def test_benchmark_validation_reports_exact_mismatch(tmp_path: Path) -> None:
             expected_active_cells=3,
             expected_wells=("P1",),
         )
-

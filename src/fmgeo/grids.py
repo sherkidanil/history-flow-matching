@@ -56,6 +56,12 @@ def _numeric_values(body: str) -> list[float]:
     return values
 
 
+def parse_numeric_keyword(path: str | Path, keyword: str) -> tuple[float, ...]:
+    """Read and expand one numeric Eclipse keyword record from a text include."""
+    text = Path(path).read_text(encoding="utf-8", errors="replace")
+    return tuple(_numeric_values(_keyword_body(text, keyword)))
+
+
 def _dimensions(deck_text: str, grid_text: str | None) -> tuple[int, int, int]:
     for text, keyword in ((deck_text, "DIMENS"), (grid_text, "SPECGRID")):
         if text is None:

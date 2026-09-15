@@ -1,13 +1,142 @@
-# PUNQ-S3 prior configuration. Geological values remain unset until M1 data
-# provenance and the primary literature have been verified.
+# Conditioned object-based PUNQ-S3 prior. Grid coordinates below are zero-based.
 seed: 20260915
-matern:
-  nu: 1.5
-  pad: 2.0
-  fit_from_ensemble: true
-  corr_len_cells: null
-  validation:
-    variogram_relative_tolerance: 0.05
-    anisotropy_relative_tolerance: 0.10
-    resolution_ks_max: 0.025
+shape: [5, 28, 19]  # Official PUNQ-S3 deck: SPECGRID.
+cell_size_m: [180.0, 180.0]  # Official PUNQ-S3 GEO coordinates.
+channels_per_channel_layer: 3  # Required experiment design: 9 channels total.
 
+# Widths and azimuth are from the official GeolDescr.htm. Width standard
+# deviations, sinusoid amplitudes, and wavelengths are ASSUMED, not sourced.
+# Rock-property values are measured calibrations from the official truth deck:
+# low/high porosity subsets for channel layers and all active cells otherwise.
+# Initial property correlation lengths converted official GenTruth values from
+# metres using 180 m cells. X lengths below are then calibrated to the truth
+# variogram because an axis-aligned model cannot reproduce the source rotations.
+layers:
+  - kind: channel
+    background:
+      logk_mean: 2.619377
+      logk_std: 1.179269
+      porosity_intercept: 0.018728
+      porosity_slope: 0.011557
+      porosity_bounds: [0.01, 0.30]
+    sand:
+      logk_mean: 6.361556
+      logk_std: 0.795273
+      porosity_intercept: 0.135964
+      porosity_slope: 0.020161
+      porosity_bounds: [0.01, 0.30]
+    geometry:
+      width_mean_m: 800.0
+      width_std_m: 120.0  # ASSUMED, not from source.
+      amplitude_range_m: [180.0, 720.0]  # ASSUMED, not from source.
+      wavelength_range_m: [2000.0, 5000.0]  # ASSUMED, not from source.
+      azimuth_range_degrees: [110.0, 170.0]
+      net_to_gross_width_fraction: 0.64  # ASSUMED calibration to truth fraction.
+    vertical_ratio: 0.465533  # Median PERMZ/PERMX in official truth, active cells.
+    property_corr_len_cells: [2.0, 2.5]  # Calibrated to truth variograms.
+
+  # Homogeneous by required experiment design. Official geology describes
+  # shale with distal mouthbar patches, so this simplification is explicit.
+  - kind: homogeneous
+    background:
+      logk_mean: 2.904898
+      logk_std: 1.346872
+      porosity_intercept: 0.005891
+      porosity_slope: 0.022904
+      porosity_bounds: [0.01, 0.17]
+    vertical_ratio: 0.243158
+    property_corr_len_cells: [5.2, 2.0]  # Calibrated to truth variograms.
+
+  - kind: channel
+    background:
+      logk_mean: 4.065541
+      logk_std: 0.933522
+      porosity_intercept: 0.005025
+      porosity_slope: 0.013301
+      porosity_bounds: [0.01, 0.30]
+    sand:
+      logk_mean: 6.236526
+      logk_std: 0.712496
+      porosity_intercept: 0.124092
+      porosity_slope: 0.020826
+      porosity_bounds: [0.01, 0.30]
+    geometry:
+      width_mean_m: 1000.0
+      width_std_m: 150.0  # ASSUMED, not from source.
+      amplitude_range_m: [180.0, 900.0]  # ASSUMED, not from source.
+      wavelength_range_m: [2000.0, 5000.0]  # ASSUMED, not from source.
+      azimuth_range_degrees: [110.0, 170.0]
+      net_to_gross_width_fraction: 0.70  # ASSUMED calibration to truth fraction.
+    vertical_ratio: 0.487451
+    property_corr_len_cells: [2.6, 3.0]  # Calibrated to truth variograms.
+
+  # Homogeneous by required experiment design. Official geology describes a
+  # lobate mouthbar in lagoonal clay, so this simplification is explicit.
+  - kind: homogeneous
+    background:
+      logk_mean: 4.227007
+      logk_std: 1.571421
+      porosity_intercept: 0.011968
+      porosity_slope: 0.026269
+      porosity_bounds: [0.01, 0.22]
+    vertical_ratio: 0.290271
+    property_corr_len_cells: [2.6, 2.0]  # Calibrated to truth variograms.
+
+  - kind: channel
+    background:
+      logk_mean: 3.758467
+      logk_std: 1.609540
+      porosity_intercept: 0.037275
+      porosity_slope: 0.007205
+      porosity_bounds: [0.01, 0.30]
+    sand:
+      logk_mean: 6.543897
+      logk_std: 0.665224
+      porosity_intercept: 0.211455
+      porosity_slope: 0.007110
+      porosity_bounds: [0.01, 0.30]
+    geometry:
+      width_mean_m: 2000.0
+      width_std_m: 300.0  # ASSUMED, not from source.
+      amplitude_range_m: [180.0, 1080.0]  # ASSUMED, not from source.
+      wavelength_range_m: [4000.0, 10000.0]  # ASSUMED, not from source.
+      azimuth_range_degrees: [110.0, 170.0]
+      net_to_gross_width_fraction: 0.40  # ASSUMED calibration to truth fraction.
+    vertical_ratio: 0.487760
+    property_corr_len_cells: [2.9, 3.0]  # Calibrated to truth variograms.
+
+# The official GenTruth file supplies continuous normalized values, not facies.
+# Channel-layer labels use value >= 0 as sand: ASSUMED, not from source.
+# Layers 2 and 4 are background by the required homogeneous-layer design.
+# x/y locations come from official WELSPECS (converted from one-based indexing).
+hard_data:
+  - {z: 0, y: 21, x: 9, facies: 0}   # PRO-1
+  - {z: 1, y: 21, x: 9, facies: 0}
+  - {z: 2, y: 21, x: 9, facies: 0}
+  - {z: 3, y: 21, x: 9, facies: 0}
+  - {z: 4, y: 21, x: 9, facies: 1}
+  - {z: 0, y: 16, x: 8, facies: 1}   # PRO-4
+  - {z: 1, y: 16, x: 8, facies: 0}
+  - {z: 2, y: 16, x: 8, facies: 0}
+  - {z: 3, y: 16, x: 8, facies: 0}
+  - {z: 4, y: 16, x: 8, facies: 1}
+  - {z: 0, y: 10, x: 16, facies: 1}  # PRO-5
+  - {z: 1, y: 10, x: 16, facies: 0}
+  - {z: 2, y: 10, x: 16, facies: 1}
+  - {z: 3, y: 10, x: 16, facies: 0}
+  - {z: 4, y: 10, x: 16, facies: 0}
+  - {z: 0, y: 23, x: 10, facies: 0}  # PRO-11
+  - {z: 1, y: 23, x: 10, facies: 0}
+  - {z: 2, y: 23, x: 10, facies: 1}
+  - {z: 3, y: 23, x: 10, facies: 0}
+  - {z: 4, y: 23, x: 10, facies: 1}
+  - {z: 0, y: 11, x: 14, facies: 0}  # PRO-12
+  - {z: 1, y: 11, x: 14, facies: 0}
+  - {z: 2, y: 11, x: 14, facies: 0}
+  - {z: 3, y: 11, x: 14, facies: 0}
+  - {z: 4, y: 11, x: 14, facies: 1}
+  - {z: 0, y: 21, x: 16, facies: 1}  # PRO-15
+  - {z: 1, y: 21, x: 16, facies: 0}
+  - {z: 2, y: 21, x: 16, facies: 1}
+  - {z: 3, y: 21, x: 16, facies: 0}
+  - {z: 4, y: 21, x: 16, facies: 1}
