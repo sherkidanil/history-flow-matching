@@ -55,6 +55,7 @@ def augment_crops(
     seed: int,
     rotations: bool,
     rotation_variogram_tolerance: float = 0.2,
+    flip_axes_zyx: tuple[bool, bool, bool] = (False, True, True),
 ) -> tuple[NDArray[np.generic], tuple[CropMetadata, ...]]:
     """Sample deterministic crops and apply reflections and safe rotations."""
 
@@ -94,7 +95,12 @@ def augment_crops(
             x_start : x_start + x_size,
         ].copy()
 
-        flips = tuple(bool(value) for value in rng.integers(0, 2, size=3))
+        flips = tuple(
+            enabled and bool(value)
+            for enabled, value in zip(
+                flip_axes_zyx, rng.integers(0, 2, size=3), strict=True
+            )
+        )
         for axis, flip in enumerate(flips):
             if flip:
                 crop_values = np.flip(crop_values, axis=axis)
