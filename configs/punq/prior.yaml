@@ -1,0 +1,13 @@
+# PUNQ-S3 prior configuration. Geological values remain unset until M1 data
+# provenance and the primary literature have been verified.
+seed: 20260915
+matern:
+  nu: 1.5
+  pad: 2.0
+  fit_from_ensemble: true
+  corr_len_cells: null
+  validation:
+    variogram_relative_tolerance: 0.05
+    anisotropy_relative_tolerance: 0.10
+    resolution_ks_max: 0.025
+
