@@ -5,9 +5,29 @@ import numpy as np
 from fmgeo.metrics.egg import (
     assess_egg_generator,
     bimodality_coefficient,
+    egg_cluster_size_summary,
     egg_distribution_metrics,
     egg_well_connectivity,
 )
+
+
+def test_egg_cluster_size_summary_matches_analytic_components() -> None:
+    sand = np.zeros((2, 1, 3, 5), dtype=bool)
+    sand[0, 0, 0, :3] = True
+    sand[0, 0, 2, 4] = True
+    sand[1, 0, 0, :2] = True
+    sand[1, 0, 2, 3:] = True
+
+    summary = egg_cluster_size_summary(sand)
+
+    assert summary["field_count"] == 2
+    assert summary["component_count"] == 4
+    assert summary["component_size_p10"] == 1.3
+    assert summary["component_size_p50"] == 2.0
+    assert summary["component_size_p90"] == 2.7
+    assert summary["largest_component_fraction_p10"] == 0.525
+    assert summary["largest_component_fraction_p50"] == 0.625
+    assert summary["largest_component_fraction_p90"] == 0.725
 
 
 def test_identical_egg_distributions_have_zero_comparison_errors() -> None:

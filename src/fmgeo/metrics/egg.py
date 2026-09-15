@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy import ndimage, stats
 
-from fmgeo.metrics.geology import experimental_variogram
+from fmgeo.metrics.geology import connected_component_sizes, experimental_variogram
 
 EggMetricValue = float | int
 GENERATOR_ACCEPTANCE_METRICS = (
@@ -84,6 +84,37 @@ def egg_well_connectivity(
             if column_labels[pair[0]] & column_labels[pair[1]]:
                 counts[pair] += 1
     return {pair: counts[pair] / len(sand) for pair in pairs}
+
+
+def egg_cluster_size_summary(sand: ArrayLike) -> dict[str, EggMetricValue]:
+    """Summarize pooled cluster sizes and per-field largest-cluster fractions."""
+
+    values = np.asarray(sand)
+    if values.ndim != 4 or values.shape[0] == 0:
+        raise ValueError("sand must be a non-empty ensemble with shape (sample,z,y,x)")
+    if values.dtype != np.bool_ and not np.all(np.isin(values, (0, 1))):
+        raise ValueError("sand must contain only boolean or binary values")
+    binary = values.astype(bool, copy=False)
+    all_sizes: list[NDArray[np.int64]] = []
+    largest_fractions: list[float] = []
+    for field in binary:
+        sizes = connected_component_sizes(field)
+        all_sizes.append(sizes)
+        sand_cells = int(np.count_nonzero(field))
+        largest_fractions.append(0.0 if sand_cells == 0 else float(sizes[-1] / sand_cells))
+    pooled = np.concatenate(all_sizes) if any(len(sizes) for sizes in all_sizes) else np.zeros(1)
+    component_quantiles = np.quantile(pooled, (0.1, 0.5, 0.9))
+    fraction_quantiles = np.quantile(largest_fractions, (0.1, 0.5, 0.9))
+    return {
+        "field_count": len(binary),
+        "component_count": sum(len(sizes) for sizes in all_sizes),
+        "component_size_p10": float(component_quantiles[0]),
+        "component_size_p50": float(component_quantiles[1]),
+        "component_size_p90": float(component_quantiles[2]),
+        "largest_component_fraction_p10": float(fraction_quantiles[0]),
+        "largest_component_fraction_p50": float(fraction_quantiles[1]),
+        "largest_component_fraction_p90": float(fraction_quantiles[2]),
+    }
 
 
 def _sample_active_values(
