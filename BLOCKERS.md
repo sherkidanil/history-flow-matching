@@ -3,6 +3,27 @@
 This log records blocked work, attempted remedies, fallbacks, and assumptions.
 Entries must be dated and must distinguish measured facts from hypotheses.
 
+## Environment constraints
+
+### Bundled Egg MPS binaries are not portable
+
+- **Observed (2026-09-15):** `scikit-mps` installs on both machines, but its
+  bundled `mps_genesim` executable is x86-only on the arm64 Mac (`Exec format
+  error`). On the Linux x86_64 cluster, a minimal 6x6x1 run with NumPy 1.26.4
+  exits with signal 11 before producing a realization. With the project's
+  NumPy 2.x environment, the wrapper also uses the removed `np.NaN` alias.
+- **Impact:** The bundled wheel cannot be used for accepted MPS-derived Egg
+  data. The arm64 Mac remains unsuitable for this strategy.
+- **Attempted remedies:** Tested the documented `mps_genesim` Python interface,
+  isolated output directories, an explicit output directory, NumPy below 2,
+  and direct executable invocation on Linux; the latter confirmed return code
+  `-11` rather than a wrapper path/read error.
+- **Resolved capability path (2026-09-15):** Building official MPSlib source on
+  the Linux cluster produced a working executable. The same deterministic test
+  then returned two `(6, 6, 1)` realizations successfully. Accepted runs must
+  use that explicit executable directory with `scikit-mps` and NumPy below 2;
+  no substitute prior will be labeled as MPS.
+
 ## Open blockers
 
 ### OPM Flow does not reproduce the official PUNQ-S3 truth forecast
