@@ -6,6 +6,8 @@ from fmgeo.metrics.geology import (
     connected_component_sizes,
     experimental_variogram,
     facies_fraction_by_layer,
+    well_column_connected,
+    well_column_connectivity_probability,
     well_pair_connected,
     well_pair_connectivity_probability,
 )
@@ -51,3 +53,12 @@ def test_well_pair_connectivity_and_probability() -> None:
         np.stack([connected, disconnected]), first, second
     ) == 0.5
 
+
+def test_well_column_connectivity_accepts_connection_in_any_layer() -> None:
+    sand = np.zeros((3, 4, 5), dtype=bool)
+    sand[1, 2, 1:5] = True
+
+    assert well_column_connected(sand, (2, 1), (2, 4))
+    assert not well_column_connected(sand, (0, 0), (2, 4))
+    ensemble = np.stack([sand, np.zeros_like(sand)])
+    assert well_column_connectivity_probability(ensemble, (2, 1), (2, 4)) == 0.5

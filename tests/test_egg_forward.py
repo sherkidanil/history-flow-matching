@@ -8,7 +8,11 @@ import numpy as np
 import pytest
 
 from fmgeo.forward import egg
-from fmgeo.forward.egg import extract_egg_observations, run_egg_forward
+from fmgeo.forward.egg import (
+    extract_egg_observations,
+    parse_egg_well_locations,
+    run_egg_forward,
+)
 from fmgeo.forward.runner import ForwardResult
 
 
@@ -123,3 +127,17 @@ def test_run_egg_forward_prepares_permeability_and_caches(
     assert first.status == "ok"
     assert second.cache_hit
     assert len(list((tmp_path / "cache").glob("*.json"))) == 1
+
+
+def test_parse_egg_well_locations_converts_to_zero_based_yx() -> None:
+    deck = """
+WELSPECS
+ 'INJECT1' '1' 5 57 1* 'WATER' /
+ 'PROD1' '1' 16 43 1* 'OIL' /
+/
+COMPDAT
+"""
+
+    locations = parse_egg_well_locations(deck)
+
+    assert locations == {"INJECT1": (56, 4), "PROD1": (42, 15)}

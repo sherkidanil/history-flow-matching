@@ -129,3 +129,44 @@ def well_pair_connectivity_probability(
         raise ValueError("ensemble must have shape (sample, z, y, x)")
     connections = [well_pair_connected(sample, first, second) for sample in values]
     return float(np.mean(connections))
+
+
+def well_column_connected(
+    sand: ArrayLike,
+    first_yx: Sequence[int],
+    second_yx: Sequence[int],
+) -> bool:
+    """Check whether any completed cells in two vertical wells share a component."""
+
+    values = np.asarray(sand, dtype=bool)
+    if values.ndim != 3 or len(first_yx) != 2 or len(second_yx) != 2:
+        raise ValueError("sand must be 3D and well coordinates must be (y, x)")
+    first = tuple(int(value) for value in first_yx)
+    second = tuple(int(value) for value in second_yx)
+    if any(
+        coordinate < 0 or coordinate >= bound
+        for pair in (first, second)
+        for coordinate, bound in zip(pair, values.shape[1:], strict=True)
+    ):
+        raise ValueError("well coordinate is outside the grid")
+    components, _ = _labeled_components(values)
+    first_labels = set(np.unique(components[:, first[0], first[1]])) - {0}
+    second_labels = set(np.unique(components[:, second[0], second[1]])) - {0}
+    return bool(first_labels & second_labels)
+
+
+def well_column_connectivity_probability(
+    ensemble: ArrayLike,
+    first_yx: Sequence[int],
+    second_yx: Sequence[int],
+) -> float:
+    """Estimate vertical-well connection probability across an ensemble."""
+
+    values = np.asarray(ensemble, dtype=bool)
+    if values.ndim != 4 or values.shape[0] == 0:
+        raise ValueError("ensemble must have shape (sample, z, y, x)")
+    return float(
+        np.mean(
+            [well_column_connected(sample, first_yx, second_yx) for sample in values]
+        )
+    )

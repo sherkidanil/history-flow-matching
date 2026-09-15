@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 from collections.abc import Sequence
 from pathlib import Path
@@ -16,6 +17,23 @@ from fmgeo.forward.runner import ForwardResult, run_simulator
 from fmgeo.priors.egg_io import EGG_SHAPE_ZYX, write_egg_permeability_include
 
 EGG_PRODUCERS = ("PROD1", "PROD2", "PROD3", "PROD4")
+
+
+def parse_egg_well_locations(deck: str) -> dict[str, tuple[int, int]]:
+    """Read Egg WELSPECS I/J locations as zero-based ``(y, x)`` pairs."""
+
+    section = re.search(r"(?ims)^\s*WELSPECS\s*$\s*(.*?)^\s*/\s*$", deck)
+    if section is None:
+        raise ValueError("deck does not contain a terminated WELSPECS section")
+    records = re.findall(
+        r"(?im)'(INJECT\d+|PROD\d+)'\s+'[^']+'\s+(\d+)\s+(\d+)", section.group(1)
+    )
+    if not records:
+        raise ValueError("WELSPECS contains no Egg injector or producer records")
+    locations = {name: (int(j) - 1, int(i) - 1) for name, i, j in records}
+    if len(locations) != len(records):
+        raise ValueError("WELSPECS contains duplicate Egg well names")
+    return locations
 
 
 def _history_indices(

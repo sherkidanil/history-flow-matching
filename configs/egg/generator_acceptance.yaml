@@ -1,0 +1,11 @@
+# These limits were fixed only after the first complete pilots for all three
+# strategies. They are therefore an honest retrospective engineering gate, not
+# a confirmatory pre-registration; the final report must retain this label.
+declaration_status: retrospective_after_complete_pilots
+limits:
+  roundtrip_relative_error: 0.01
+  marginal_ks: 0.10
+  variogram_x_nrmse: 0.25
+  variogram_y_nrmse: 0.25
+  spanning_fraction_abs_error: 0.10
+  bimodality_abs_error: 0.05

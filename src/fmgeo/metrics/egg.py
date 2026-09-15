@@ -2,13 +2,85 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+from typing import Any
+
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy import ndimage, stats
 
-from fmgeo.metrics.geology import experimental_variogram
+from fmgeo.metrics.geology import (
+    experimental_variogram,
+    well_column_connectivity_probability,
+)
 
 EggMetricValue = float | int
+GENERATOR_ACCEPTANCE_METRICS = (
+    "roundtrip_relative_error",
+    "marginal_ks",
+    "variogram_x_nrmse",
+    "variogram_y_nrmse",
+    "spanning_fraction_abs_error",
+    "bimodality_abs_error",
+)
+
+
+def assess_egg_generator(
+    metrics: Mapping[str, EggMetricValue],
+    *,
+    roundtrip_relative_error: float,
+    limits: Mapping[str, float],
+) -> dict[str, Any]:
+    """Apply one complete shared acceptance schema to an Egg FM report."""
+
+    if set(limits) != set(GENERATOR_ACCEPTANCE_METRICS):
+        raise ValueError("generator limits must define the complete shared metric schema")
+    values = {"roundtrip_relative_error": float(roundtrip_relative_error)}
+    for name in GENERATOR_ACCEPTANCE_METRICS[1:]:
+        if name not in metrics:
+            raise ValueError(f"generator metrics are missing {name}")
+        values[name] = float(metrics[name])
+    if any(not np.isfinite(value) or value < 0 for value in values.values()):
+        raise ValueError("generator metric values must be finite and non-negative")
+    if any(not np.isfinite(limit) or limit < 0 for limit in limits.values()):
+        raise ValueError("generator limits must be finite and non-negative")
+    criteria = {
+        name: {
+            "value": values[name],
+            "limit": float(limits[name]),
+            "passed": values[name] <= limits[name],
+        }
+        for name in GENERATOR_ACCEPTANCE_METRICS
+    }
+    return {
+        "accepted": all(bool(item["passed"]) for item in criteria.values()),
+        "criteria": criteria,
+    }
+
+
+def egg_well_connectivity(
+    fields: ArrayLike,
+    *,
+    threshold: float,
+    wells: Mapping[str, Sequence[int]],
+) -> dict[tuple[str, str], float]:
+    """Compute every injector-producer column connectivity probability."""
+
+    values = np.asarray(fields, dtype=np.float64)
+    if values.ndim != 4 or values.shape[0] == 0 or not np.all(np.isfinite(values)):
+        raise ValueError("fields must be a non-empty finite Egg ensemble")
+    injectors = sorted(name for name in wells if name.startswith("INJECT"))
+    producers = sorted(name for name in wells if name.startswith("PROD"))
+    if not injectors or not producers:
+        raise ValueError("well map must contain injectors and producers")
+    sand = values >= threshold
+    return {
+        (injector, producer): well_column_connectivity_probability(
+            sand, wells[injector], wells[producer]
+        )
+        for injector in injectors
+        for producer in producers
+    }
 
 
 def _sample_active_values(
