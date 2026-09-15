@@ -1,0 +1,9 @@
+# Strategy A: reuse the official Egg realizations with geometry-safe transforms.
+strategy: augmentation
+seed: 20260915
+dataset_count: 5000  # ASSUMED equal training-set budget for all three strategies.
+heldout_indices: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # One-based, ASSUMED split.
+crop_shape_zyx: [7, 60, 60]
+flip_axes_zyx: [false, true, true]  # Preserve stratigraphic layer order.
+rotations: true
+rotation_variogram_tolerance: 0.20  # ASSUMED predeclared acceptance threshold.
