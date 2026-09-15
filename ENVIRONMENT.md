@@ -60,6 +60,16 @@ and 25,920-byte UNSMRY. It completed all 120 monthly output points through day
 batch completed without failures; individual measured runtimes summed to
 3,934.83 seconds while wall time was reduced by concurrency.
 
+The three complete 100-member, five-stage Egg inversions executed 1,500/1,500
+successful forward models. Summed per-simulator runtimes were 19,618.88 seconds
+for raw, 22,657.82 for PCA, and 22,953.82 for FM (65,230.52 seconds total;
+18.12 simulator-hours). After retrieving every final artifact and building the
+publication outputs, `du -sh` measured the local project worktree at 2.4 GiB
+(2,544,304,128 allocated bytes), well below the 40 GiB project limit.
+After removing only the completed experiment controller/evaluation containers,
+the remote repository occupied 1.7 GiB, its transient work root 5.4 MiB, and
+the `/mnt/local` filesystem had 31 GiB free. No OPM restart files remained.
+
 <!-- BEGIN AUTO-GENERATED M0 PROBE -->
 ## Latest measured M0 probe
 
