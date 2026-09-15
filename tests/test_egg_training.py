@@ -24,6 +24,52 @@ def test_repository_egg_fm_config_is_valid() -> None:
     assert config.training.epochs == 16
 
 
+def test_egg_fm_config_accepts_controlled_white_source(tmp_path: Path) -> None:
+    repository = Path(__file__).parents[1]
+    payload = yaml.safe_load((repository / "configs/egg/fm_train.yaml").read_text())
+    payload["source"] = {
+        "kind": "white",
+        "nu": 1.5,
+        "corr_len_cells_zyx": [1.0, 4.0, 8.0],
+        "corr_len_scale": 1.0,
+    }
+    path = tmp_path / "white.yaml"
+    path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+    sys.path.insert(0, str(repository / "scripts"))
+    try:
+        module = importlib.import_module("m8_train_egg")
+        config = module.load_fm_config(path)
+    finally:
+        sys.path.pop(0)
+
+    assert config.source.kind == "white"
+    assert config.source.corr_len_scale == 1.0
+
+
+def test_repository_source_ablation_configs_vary_only_source_measure() -> None:
+    repository = Path(__file__).parents[1]
+    sys.path.insert(0, str(repository / "scripts"))
+    try:
+        module = importlib.import_module("m8_train_egg")
+        configs = {
+            name: module.load_fm_config(
+                repository / f"configs/ablation/egg_source_{name}.yaml"
+            )
+            for name in ("white", "matern", "matern_misspec")
+        }
+    finally:
+        sys.path.pop(0)
+
+    controlled = {
+        name: {key: value for key, value in config.model_dump().items() if key != "source"}
+        for name, config in configs.items()
+    }
+    assert controlled["white"] == controlled["matern"] == controlled["matern_misspec"]
+    assert configs["white"].source.kind == "white"
+    assert configs["matern"].source.corr_len_scale == 1.0
+    assert configs["matern_misspec"].source.corr_len_scale == 3.0
+
+
 def test_egg_training_script_enforces_budget_and_writes_checkpoint(tmp_path: Path) -> None:
     data = tmp_path / "tiny.h5"
     with h5py.File(data, "w") as handle:

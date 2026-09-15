@@ -25,7 +25,7 @@ from fmgeo.config import StrictModel
 from fmgeo.param.flowmatching.model_unet3d import UNet3D
 from fmgeo.param.flowmatching.train import (
     LayerTrendNormalizer,
-    MaternSourceSampler,
+    make_source_sampler,
     save_checkpoint_policy,
     train_flow_matching,
 )
@@ -40,9 +40,10 @@ class EggDataConfig(StrictModel):
 
 
 class SourceConfig(StrictModel):
-    kind: Literal["matern"]
+    kind: Literal["white", "matern"]
     nu: float = Field(gt=0)
     corr_len_cells_zyx: tuple[float, float, float]
+    corr_len_scale: float = Field(default=1.0, gt=0)
 
 
 class ModelConfig(StrictModel):
@@ -157,10 +158,12 @@ def main() -> int:
         lr=config.training.learning_rate,
         weight_decay=config.training.weight_decay,
     )
-    source = MaternSourceSampler(
+    source = make_source_sampler(
+        config.source.kind,
         shape=config.data.shape_zyx,
         corr_len=config.source.corr_len_cells_zyx,
         nu=config.source.nu,
+        corr_len_scale=config.source.corr_len_scale,
     )
     losses, ema = train_flow_matching(
         model,

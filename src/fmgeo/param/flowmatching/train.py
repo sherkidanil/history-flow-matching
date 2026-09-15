@@ -8,7 +8,7 @@ import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import torch
 from torch import nn
@@ -16,6 +16,31 @@ from torch import nn
 SourceSampler = Callable[
     [int, torch.Generator, torch.device, torch.dtype], torch.Tensor
 ]
+
+
+@dataclass(frozen=True)
+class WhiteSourceSampler:
+    """Seeded independent standard-normal source on a fixed spatial grid."""
+
+    shape: tuple[int, int, int]
+
+    def __post_init__(self) -> None:
+        if any(size <= 0 for size in self.shape):
+            raise ValueError("source shape entries must be positive")
+
+    def __call__(
+        self,
+        batch_size: int,
+        generator: torch.Generator,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> torch.Tensor:
+        return torch.randn(
+            (batch_size, 1, *self.shape),
+            generator=generator,
+            device=device,
+            dtype=dtype,
+        )
 
 
 @dataclass(frozen=True)
@@ -74,6 +99,30 @@ class MaternSourceSampler:
             starts[1] : starts[1] + self.shape[1],
             starts[2] : starts[2] + self.shape[2],
         ]
+
+
+def make_source_sampler(
+    kind: Literal["white", "matern"],
+    *,
+    shape: tuple[int, int, int],
+    corr_len: tuple[float, float, float],
+    nu: float,
+    corr_len_scale: float = 1.0,
+) -> WhiteSourceSampler | MaternSourceSampler:
+    """Construct one ablation source while varying only its declared measure."""
+
+    if corr_len_scale <= 0:
+        raise ValueError("correlation-length scale must be positive")
+    if kind == "white":
+        return WhiteSourceSampler(shape=shape)
+    if kind == "matern":
+        scaled = (
+            corr_len[0] * corr_len_scale,
+            corr_len[1] * corr_len_scale,
+            corr_len[2] * corr_len_scale,
+        )
+        return MaternSourceSampler(shape=shape, corr_len=scaled, nu=nu)
+    raise ValueError(f"unsupported source kind {kind!r}")
 
 
 def masked_flow_matching_loss(

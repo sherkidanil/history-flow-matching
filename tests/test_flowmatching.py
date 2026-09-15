@@ -15,6 +15,8 @@ from fmgeo.param.flowmatching.sample import FlowTransform, integrate_ode
 from fmgeo.param.flowmatching.train import (
     LayerTrendNormalizer,
     MaternSourceSampler,
+    WhiteSourceSampler,
+    make_source_sampler,
     masked_flow_matching_loss,
     save_checkpoint_policy,
     seeded_batch_indices,
@@ -111,6 +113,42 @@ def test_matern_source_sampler_is_seeded_and_shape_correct() -> None:
 
     assert first.shape == (2, 1, 3, 5, 7)
     torch.testing.assert_close(first, second)
+
+
+def test_white_source_sampler_is_seeded_unit_gaussian() -> None:
+    sampler = WhiteSourceSampler(shape=(4, 8, 8))
+    first = sampler(
+        32, torch.Generator().manual_seed(83), torch.device("cpu"), torch.float32
+    )
+    second = sampler(
+        32, torch.Generator().manual_seed(83), torch.device("cpu"), torch.float32
+    )
+
+    assert first.shape == (32, 1, 4, 8, 8)
+    torch.testing.assert_close(first, second)
+    assert abs(float(first.mean())) < 0.05
+    assert abs(float(first.std()) - 1.0) < 0.05
+
+
+def test_source_factory_scales_only_matern_correlation_lengths() -> None:
+    matern = make_source_sampler(
+        "matern",
+        shape=(3, 5, 7),
+        corr_len=(1.0, 4.0, 8.0),
+        nu=1.5,
+        corr_len_scale=3.0,
+    )
+    white = make_source_sampler(
+        "white",
+        shape=(3, 5, 7),
+        corr_len=(1.0, 4.0, 8.0),
+        nu=1.5,
+        corr_len_scale=3.0,
+    )
+
+    assert isinstance(matern, MaternSourceSampler)
+    assert matern.corr_len == (3.0, 12.0, 24.0)
+    assert isinstance(white, WhiteSourceSampler)
 
 
 def test_layer_trend_normalization_is_invertible() -> None:

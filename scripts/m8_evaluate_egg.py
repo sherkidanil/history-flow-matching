@@ -25,7 +25,7 @@ from fmgeo.config import StrictModel
 from fmgeo.metrics.egg import egg_distribution_metrics
 from fmgeo.param.flowmatching.model_unet3d import UNet3D
 from fmgeo.param.flowmatching.sample import FlowTransform
-from fmgeo.param.flowmatching.train import LayerTrendNormalizer, MaternSourceSampler
+from fmgeo.param.flowmatching.train import LayerTrendNormalizer, make_source_sampler
 from fmgeo.runtime import select_device
 
 
@@ -103,10 +103,12 @@ def main() -> int:
     threshold = float(np.quantile(training[:, active], metric_config.high_permeability_quantile))
 
     mask = torch.from_numpy(active)[None, None].to(device)
-    source_sampler = MaternSourceSampler(
+    source_sampler = make_source_sampler(
+        config.source.kind,
         shape=config.data.shape_zyx,
         corr_len=config.source.corr_len_cells_zyx,
         nu=config.source.nu,
+        corr_len_scale=config.source.corr_len_scale,
     )
     transform = FlowTransform(
         model,
