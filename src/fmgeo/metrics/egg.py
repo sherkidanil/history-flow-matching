@@ -120,11 +120,16 @@ def _spans_x(high: NDArray[np.bool_], active: NDArray[np.bool_]) -> bool:
     return bool((left & right) - {0})
 
 
-def _bimodality_coefficient(values: NDArray[np.float64]) -> float:
-    kurtosis = float(stats.kurtosis(values, fisher=False, bias=False))
+def bimodality_coefficient(values: ArrayLike) -> float:
+    """Return the sample skewness-kurtosis bimodality coefficient."""
+
+    samples = np.asarray(values, dtype=np.float64).reshape(-1)
+    if len(samples) < 4 or not np.all(np.isfinite(samples)):
+        raise ValueError("bimodality coefficient requires at least four finite values")
+    kurtosis = float(stats.kurtosis(samples, fisher=False, bias=False))
     if not np.isfinite(kurtosis) or kurtosis <= 0:
         return float("nan")
-    skewness = float(stats.skew(values, bias=False))
+    skewness = float(stats.skew(samples, bias=False))
     return (skewness**2 + 1.0) / kurtosis
 
 
@@ -182,8 +187,8 @@ def egg_distribution_metrics(
             [_spans_x(field >= high_permeability_threshold, active) for field in reference_subset]
         )
     )
-    generated_bimodality = _bimodality_coefficient(sampled_values)
-    reference_bimodality = _bimodality_coefficient(reference_values)
+    generated_bimodality = bimodality_coefficient(sampled_values)
+    reference_bimodality = bimodality_coefficient(reference_values)
     return {
         "schema_version": 1,
         "metric_sample_cells_generated": len(sampled_values),

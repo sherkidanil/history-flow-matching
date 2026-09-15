@@ -4,6 +4,7 @@ import numpy as np
 
 from fmgeo.metrics.egg import (
     assess_egg_generator,
+    bimodality_coefficient,
     egg_distribution_metrics,
     egg_well_connectivity,
 )
@@ -94,3 +95,9 @@ def test_generator_acceptance_requires_every_shared_limit() -> None:
     assert not result["accepted"]
     assert not result["criteria"]["variogram_y_nrmse"]["passed"]
     assert result["criteria"]["marginal_ks"]["passed"]
+
+
+def test_bimodality_coefficient_is_high_for_two_separated_modes() -> None:
+    values = np.repeat([-1.0, 1.0], 100)
+
+    assert bimodality_coefficient(values) > 0.95
