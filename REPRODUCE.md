@@ -65,6 +65,7 @@ PYTHONPATH=src uv run --no-project \
   --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
   --actnum data/egg/Egg_Model_Data_Files_v2/Eclipse/ACTIVE.INC \
   --mpslib-executable-dir scratch/mpslib \
+  --git-commit "$(git rev-parse HEAD)" \
   --output artifacts/egg_mps_5000.h5 \
   --manifest artifacts/MANIFEST.json \
   --report results/raw/egg_mps_5000.json

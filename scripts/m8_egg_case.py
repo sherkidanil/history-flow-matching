@@ -238,6 +238,10 @@ def main() -> int:
         type=Path,
         help="directory containing a validated source-built MPSlib executable",
     )
+    parser.add_argument(
+        "--git-commit",
+        help="provenance commit for a source snapshot without local Git metadata",
+    )
     args = parser.parse_args()
 
     config = load_strategy_config(args.config)
@@ -262,7 +266,7 @@ def main() -> int:
         handle.attrs["strategy"] = config.strategy
         handle.attrs["seed"] = config.seed
 
-    git_commit = subprocess.run(
+    git_commit = args.git_commit or subprocess.run(
         ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
     ).stdout.strip()
     config_hash = canonical_config_hash(config)
