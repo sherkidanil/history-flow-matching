@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
+import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from fmgeo.forward import egg
-from fmgeo.forward.egg import extract_egg_observations
+from fmgeo.forward.egg import extract_egg_observations, run_egg_forward
+from fmgeo.forward.runner import ForwardResult
 
 
 def test_extract_egg_observations_uses_exact_history_schedule(
@@ -71,3 +74,48 @@ def test_extract_egg_observations_rejects_nonmatching_schedule(
         assert "schedule" in str(error)
     else:
         raise AssertionError("nonmatching schedule was accepted")
+
+
+def test_run_egg_forward_prepares_permeability_and_caches(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    template = tmp_path / "template"
+    template.mkdir()
+    (template / "EGG.DATA").write_text("RUNSPEC\n", encoding="utf-8")
+    simulator = tmp_path / "simulate.py"
+    simulator.write_text(
+        "from pathlib import Path\n"
+        "import json\n"
+        "text = Path('mDARCY.INC').read_text()\n"
+        "Path('RESULT.json').write_text(json.dumps({'has_permx': 'PERMX' in text}))\n",
+        encoding="utf-8",
+    )
+
+    def fake_extract(case_path: str | Path, **_kwargs: object) -> dict[str, object]:
+        payload = json.loads(Path(case_path).with_name("RESULT.json").read_text())
+        assert payload["has_permx"]
+        return {"d": [1.0, 2.0], "FOPT_16.5y": 3.0}
+
+    monkeypatch.setattr(egg, "extract_egg_observations", fake_extract)
+    def run_once() -> ForwardResult:
+        return run_egg_forward(
+            np.zeros((7, 60, 60)),
+            template_dir=template,
+            simulator_command=(sys.executable, str(simulator)),
+            simulator_id="test-simulator-v1",
+            work_root=tmp_path / "work",
+            cache_dir=tmp_path / "cache",
+            history_end_day=120.0,
+            observation_interval_days=60.0,
+            oil_rate_relative_sigma=0.05,
+            water_rate_relative_sigma=0.05,
+            rate_sigma_floor=1.0,
+            min_free_disk_gb=0.0,
+        )
+
+    first = run_once()
+    second = run_once()
+
+    assert first.status == "ok"
+    assert second.cache_hit
+    assert len(list((tmp_path / "cache").glob("*.json"))) == 1

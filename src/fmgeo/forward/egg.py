@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import shutil
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -9,6 +12,8 @@ from typing import Any
 import numpy as np
 
 from fmgeo.forward.observables import read_summary_vectors
+from fmgeo.forward.runner import ForwardResult, run_simulator
+from fmgeo.priors.egg_io import EGG_SHAPE_ZYX, write_egg_permeability_include
 
 EGG_PRODUCERS = ("PROD1", "PROD2", "PROD3", "PROD4")
 
@@ -77,3 +82,96 @@ def extract_egg_observations(
         # Egg this value is the terminal (10-year) FOPT from the supplied deck.
         "FOPT_16.5y": float(vectors["FOPT"][-1]),
     }
+
+
+def _egg_cache_key(
+    logk: np.ndarray,
+    *,
+    template_dir: Path,
+    simulator_command: Sequence[str],
+    simulator_id: str,
+    observation_settings: dict[str, object],
+) -> str:
+    digest = hashlib.sha256()
+    digest.update(np.ascontiguousarray(logk, dtype=np.float32).tobytes())
+    for path in sorted(item for item in template_dir.rglob("*") if item.is_file()):
+        digest.update(path.relative_to(template_dir).as_posix().encode())
+        digest.update(path.read_bytes())
+    metadata = {
+        "simulator_command": list(simulator_command),
+        "simulator_id": simulator_id,
+        "observation_settings": observation_settings,
+    }
+    digest.update(json.dumps(metadata, sort_keys=True, separators=(",", ":")).encode())
+    return digest.hexdigest()
+
+
+def run_egg_forward(
+    logk: np.ndarray,
+    *,
+    template_dir: str | Path,
+    simulator_command: Sequence[str],
+    simulator_id: str,
+    work_root: str | Path,
+    cache_dir: str | Path,
+    history_end_day: float,
+    observation_interval_days: float,
+    oil_rate_relative_sigma: float,
+    water_rate_relative_sigma: float,
+    rate_sigma_floor: float,
+    producers: Sequence[str] = EGG_PRODUCERS,
+    timeout: float = 600.0,
+    min_free_disk_gb: float = 20.0,
+) -> ForwardResult:
+    """Run one restart-free Egg model and retain only compact observations."""
+
+    field = np.asarray(logk, dtype=np.float64)
+    if field.shape != EGG_SHAPE_ZYX or not np.all(np.isfinite(field)):
+        raise ValueError(f"logk must be finite with shape {EGG_SHAPE_ZYX}")
+    source = Path(template_dir).resolve()
+    if not (source / "EGG.DATA").is_file():
+        raise ValueError("template directory must contain EGG.DATA")
+    if not simulator_command or not simulator_id:
+        raise ValueError("simulator command and identity are required")
+    observation_settings: dict[str, object] = {
+        "producers": list(producers),
+        "history_end_day": history_end_day,
+        "observation_interval_days": observation_interval_days,
+        "oil_rate_relative_sigma": oil_rate_relative_sigma,
+        "water_rate_relative_sigma": water_rate_relative_sigma,
+        "rate_sigma_floor": rate_sigma_floor,
+    }
+
+    def prepare(workdir: Path) -> None:
+        shutil.copytree(source, workdir, dirs_exist_ok=True)
+        write_egg_permeability_include(field, workdir / "mDARCY.INC")
+
+    def extract(workdir: Path) -> dict[str, object]:
+        return extract_egg_observations(
+            workdir / "EGG",
+            producers=producers,
+            history_end_day=history_end_day,
+            observation_interval_days=observation_interval_days,
+            oil_rate_relative_sigma=oil_rate_relative_sigma,
+            water_rate_relative_sigma=water_rate_relative_sigma,
+            rate_sigma_floor=rate_sigma_floor,
+        )
+
+    cache_key = _egg_cache_key(
+        field,
+        template_dir=source,
+        simulator_command=simulator_command,
+        simulator_id=simulator_id,
+        observation_settings=observation_settings,
+    )
+    return run_simulator(
+        [*simulator_command, "EGG.DATA"],
+        work_root=work_root,
+        cache_dir=cache_dir,
+        cache_key=cache_key,
+        extractor=extract,
+        prepare=prepare,
+        timeout=timeout,
+        min_free_disk_gb=min_free_disk_gb,
+        disk_check_path=work_root,
+    )
