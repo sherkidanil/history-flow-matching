@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -73,6 +74,20 @@ def test_explicit_mps_adapter_is_shape_checked() -> None:
 
     assert generated.shape == (3, 3, 4, 5)
     assert np.all(generated == 1)
+
+
+def test_mps_executable_directory_is_validated(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(importlib, "import_module", lambda name: object())
+
+    with pytest.raises(MPSCapabilityError, match="missing or not executable"):
+        generate_mps_realizations(
+            np.ones((1, 2, 3, 4), dtype=np.uint8),
+            count=1,
+            seed=5,
+            executable_dir=tmp_path,
+        )
 
 
 def test_procedural_channels_are_connected_and_masked() -> None:

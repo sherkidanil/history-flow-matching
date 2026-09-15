@@ -59,7 +59,7 @@ def _run_mpslib_job(job: _MPSJob) -> tuple[tuple[int, ...], NDArray[np.generic]]
                 if job.executable_dir is not None:
                     simulator.mpslib_exe_folder = str(job.executable_dir)
                 success = simulator.run(silent=True)
-            except (AttributeError, OSError, RuntimeError) as error:
+            except Exception as error:
                 raise MPSCapabilityError(
                     "installed mpslib cannot execute on this platform; use a compatible "
                     "Linux x86_64 environment with scikit-mps and NumPy < 2"
@@ -163,6 +163,13 @@ def generate_mps_realizations(
             raise MPSCapabilityError(
                 "MPS generation requires geone or mpslib; neither dependency is installed"
             ) from None
+        if executable_dir is not None:
+            executable_dir = executable_dir.expanduser().resolve()
+            executable = executable_dir / method
+            if not executable.is_file() or not os.access(executable, os.X_OK):
+                raise MPSCapabilityError(
+                    f"validated MPSlib executable is missing or not executable: {executable}"
+                )
         return _run_mpslib(
             images,
             count,
