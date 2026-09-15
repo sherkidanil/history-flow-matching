@@ -32,6 +32,12 @@ class LinearVelocity(nn.Module):
         return 0.25 * x
 
 
+class GlobalMeanVelocity(nn.Module):
+    def forward(self, x: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
+        del time
+        return torch.ones_like(x) * x.mean()
+
+
 def test_masked_loss_ignores_inactive_and_padded_cells() -> None:
     model = ZeroVelocity()
     x0 = torch.zeros(1, 1, 2, 2, 2)
@@ -45,6 +51,22 @@ def test_masked_loss_ignores_inactive_and_padded_cells() -> None:
     )
 
     torch.testing.assert_close(loss, torch.tensor(1.0))
+
+
+def test_inactive_values_cannot_leak_into_active_velocity() -> None:
+    model = GlobalMeanVelocity()
+    x0 = torch.zeros(1, 1, 2, 2, 2)
+    clean = torch.ones_like(x0)
+    noisy = clean.clone()
+    noisy[..., 0, 0, 0] = 100.0
+    mask = torch.ones_like(x0, dtype=torch.bool)
+    mask[..., 0, 0, 0] = False
+    time = torch.tensor([0.5])
+
+    clean_loss = masked_flow_matching_loss(model, x0=x0, x1=clean, time=time, mask=mask)
+    noisy_loss = masked_flow_matching_loss(model, x0=x0, x1=noisy, time=time, mask=mask)
+
+    torch.testing.assert_close(noisy_loss, clean_loss)
 
 
 def test_time_embedding_and_models_preserve_punq_shape() -> None:

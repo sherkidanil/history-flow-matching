@@ -95,6 +95,8 @@ def masked_flow_matching_loss(
         raise ValueError("mask must broadcast to x0") from error
     if not torch.any(active):
         raise ValueError("mask contains no active cells")
+    x0 = torch.where(active, x0, torch.zeros_like(x0))
+    x1 = torch.where(active, x1, torch.zeros_like(x1))
     interpolated = (1.0 - time[:, None, None, None, None]) * x0
     interpolated = interpolated + time[:, None, None, None, None] * x1
     target = x1 - x0
