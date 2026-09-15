@@ -94,6 +94,21 @@
       "size_bytes": 9361110
     },
     {
+      "config_hash": "fff2f3ed45c715e7d325b595c21a89bb6cfd0cbcb76fbe0a7011ee0fb22fc2d1",
+      "created_at": "2026-09-15T11:47:39.579271Z",
+      "dtype": "float32",
+      "git_commit": "1f37b7ab509d0fc0e302cad8a8747742a080edec",
+      "path": "artifacts/egg_mps_5000.h5",
+      "sha256": "359acde845f756df0c332fcfcb94ca17b4392a9be322db55a9ec384bd74d0062",
+      "shape": [
+        5000,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 295252077
+    },
+    {
       "config_hash": "2c58f62aabcc8fdb7c8633ed72edfcbd9375549cc22976b39e30783e5a48409a",
       "created_at": "2026-09-15T10:12:08.318979Z",
       "dtype": "float32",
