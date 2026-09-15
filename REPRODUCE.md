@@ -70,3 +70,118 @@ PYTHONPATH=src uv run --no-project \
   --manifest artifacts/MANIFEST.json \
   --report results/raw/egg_mps_5000.json
 ```
+
+## Egg flow models and generator gate
+
+Each strategy is trained with exactly the same tracked configuration. Replace
+`STRATEGY` and `DATA` together with one of `augmentation` / `mps` /
+`procedural` and its corresponding `artifacts/egg_*_5000.h5` file:
+
+```bash
+uv run python scripts/m8_train_egg.py \
+  --config configs/egg/fm_train.yaml \
+  --strategy STRATEGY \
+  --data DATA \
+  --output-dir artifacts/egg_models/STRATEGY \
+  --manifest artifacts/STRATEGY_training_manifest.json \
+  --report results/raw/egg_STRATEGY_training.json \
+  --device auto
+
+uv run python scripts/m8_evaluate_egg.py \
+  --config configs/egg/fm_train.yaml \
+  --strategy-config configs/egg/STRATEGY.yaml \
+  --metric-config configs/egg/evaluation.yaml \
+  --checkpoint artifacts/egg_models/STRATEGY/ema.pt \
+  --training-data DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --output artifacts/egg_fm_samples_STRATEGY_1000.h5 \
+  --manifest artifacts/STRATEGY_evaluation_manifest.json \
+  --report results/raw/egg_STRATEGY_evaluation.json \
+  --device auto
+```
+
+The retrospective generator table is always rebuilt from all three immutable
+raw reports; no values are entered by hand:
+
+```bash
+uv run python scripts/m8_build_egg_generator_table.py \
+  --config configs/egg/generator_acceptance.yaml \
+  --report results/raw/egg_augmentation_evaluation.json \
+  --report results/raw/egg_mps_evaluation.json \
+  --report results/raw/egg_procedural_evaluation.json \
+  --output results/tables/egg_generator_validation.csv
+```
+
+## Egg held-out inversion
+
+Prepare and run realization 100 once to materialize the compact truth summary:
+
+```bash
+uv run python scripts/m8_prepare_egg.py \
+  --eclipse-dir data/egg/Egg_Model_Data_Files_v2/Eclipse \
+  --permeability data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations/PERM100_ECL.INC \
+  --output-dir scratch/egg_truth_perm100
+
+(cd scratch/egg_truth_perm100 && ../../scripts/flow_docker.sh EGG.DATA)
+```
+
+`scripts/m8_invert_egg.py` runs one complete raw, PCA, or FM comparison and
+persists every stage in one HDF5 file. It requires a Linux CUDA environment for
+`--method fm`; raw and PCA are CPU-only. All methods use the same arguments
+below. FM additionally requires `--fm-config`, `--checkpoint`, and
+`--training-data`.
+
+```bash
+uv run python scripts/m8_invert_egg.py \
+  --method METHOD \
+  --strategy augmentation \
+  --config configs/egg/inversion.yaml \
+  --prior-fields artifacts/egg_fm_samples_augmentation_1000.h5 \
+  --truth-case scratch/egg_truth_perm100/EGG \
+  --template-dir scratch/egg_truth_perm100 \
+  --flow-command scripts/flow_docker.sh \
+  --simulator-id 'OPM Flow 2026.04 / openporousmedia/opmreleases:latest' \
+  --work-root /path/on/docker/filesystem/fmgeo/egg_work \
+  --cache-dir scratch/egg_cache \
+  --output artifacts/egg_inversion_augmentation_METHOD.h5 \
+  --manifest artifacts/augmentation_METHOD_inversion_manifest.json \
+  --report results/raw/egg_inversion_augmentation_METHOD.json \
+  --device auto
+```
+
+The work root must be on a filesystem with at least the configured 20 GiB
+reserve. The cluster run mounted that path and the repository at identical host
+and controller-container paths so nested storage-safe OPM containers could bind
+their isolated cases correctly.
+
+After all three methods finish, derive the required publication tables and SVG
+directly from the immutable HDF5/JSON outputs:
+
+```bash
+uv run python scripts/m8_build_egg_inversion_tables.py \
+  --config configs/egg/inversion.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --truth-case scratch/egg_truth_perm100/EGG \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
+  --inversion artifacts/egg_inversion_augmentation_raw.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm.h5 \
+  --inversion-report results/raw/egg_inversion_augmentation_raw.json \
+  --inversion-report results/raw/egg_inversion_augmentation_pca.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm.json \
+  --connectivity-output results/tables/egg_connectivity.csv \
+  --bimodality-output results/tables/egg_bimodality.csv \
+  --breakthrough-output results/tables/egg_breakthrough.csv \
+  --summary-output results/tables/egg_inversion_summary.csv
+
+uv run python scripts/m8_plot_egg_inversion.py \
+  --config configs/egg/inversion.yaml \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --inversion artifacts/egg_inversion_augmentation_raw.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm.h5 \
+  --output results/figures/egg_posterior_comparison.svg
+```

@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
   "h5py>=3.10,<4",
+  "matplotlib>=3.8,<4",
   "numpy>=1.26,<3",
   "psutil>=6.0,<8",
   "pydantic>=2.9,<3",

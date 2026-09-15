@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,15 @@ def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _git_commit() -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
 
 def _last_stage(handle: h5py.File) -> str:
@@ -58,6 +68,7 @@ def _breakthrough_row(
     truth_day: float | None,
     source: Path,
     source_hash: str,
+    derived_git_commit: str,
 ) -> dict[str, object]:
     values = [item["water_breakthrough_day"][producer] for item in metadata]
     finite = np.asarray([float(value) for value in values if value is not None])
@@ -73,6 +84,7 @@ def _breakthrough_row(
         "truth_day": truth_day,
         "source_artifact": source.as_posix(),
         "source_artifact_sha256": source_hash,
+        "derived_git_commit": derived_git_commit,
     }
 
 
@@ -85,12 +97,15 @@ def main() -> int:
     parser.add_argument("--active-source", type=Path, required=True)
     parser.add_argument("--evaluation-report", type=Path, required=True)
     parser.add_argument("--inversion", type=Path, action="append", required=True)
+    parser.add_argument("--inversion-report", type=Path, action="append", required=True)
     parser.add_argument("--connectivity-output", type=Path, required=True)
     parser.add_argument("--bimodality-output", type=Path, required=True)
     parser.add_argument("--breakthrough-output", type=Path, required=True)
+    parser.add_argument("--summary-output", type=Path, required=True)
     args = parser.parse_args()
 
     config = load_egg_inversion_config(args.config)
+    derived_git_commit = _git_commit()
     evaluation = json.loads(args.evaluation_report.read_text(encoding="utf-8"))
     threshold = float(evaluation["high_permeability_threshold_logk"])
     strategy = str(evaluation["strategy"])
@@ -139,6 +154,7 @@ def main() -> int:
                     "threshold_logk": threshold,
                     "source_artifact": path.as_posix(),
                     "source_artifact_sha256": digest,
+                    "derived_git_commit": derived_git_commit,
                 }
             )
         bimodality_rows.append(
@@ -149,6 +165,7 @@ def main() -> int:
                 "threshold_logk": threshold,
                 "source_artifact": path.as_posix(),
                 "source_artifact_sha256": digest,
+                "derived_git_commit": derived_git_commit,
             }
         )
     truth_connections = egg_well_connectivity(truth, threshold=threshold, wells=wells)
@@ -164,6 +181,7 @@ def main() -> int:
                 "threshold_logk": threshold,
                 "source_artifact": truth_source.as_posix(),
                 "source_artifact_sha256": truth_hash,
+                "derived_git_commit": derived_git_commit,
             }
         )
     bimodality_rows.append(
@@ -174,6 +192,7 @@ def main() -> int:
             "threshold_logk": threshold,
             "source_artifact": truth_source.as_posix(),
             "source_artifact_sha256": truth_hash,
+            "derived_git_commit": derived_git_commit,
         }
     )
 
@@ -196,19 +215,57 @@ def main() -> int:
             truth_day=truth_breakthrough[producer],
             source=artifacts[category][0],
             source_hash=artifacts[category][1],
+            derived_git_commit=derived_git_commit,
         )
         for category in ("prior", "raw", "pca", "fm")
         for producer in EGG_PRODUCERS
     ]
+    reports: dict[str, tuple[Path, dict[str, Any]]] = {}
+    for path in args.inversion_report:
+        report = json.loads(path.read_text(encoding="utf-8"))
+        if str(report["strategy"]) != strategy:
+            raise ValueError("inversion report and evaluation strategies do not match")
+        reports[str(report["method"])] = (path, report)
+    if set(reports) != {"raw", "pca", "fm"}:
+        raise ValueError("summary requires one raw, PCA, and FM report")
+    summary_rows: list[dict[str, object]] = []
+    for category in ("prior", "raw", "pca", "fm"):
+        method = "raw" if category == "prior" else category
+        path, report = reports[method]
+        stage = report["stages"][0 if category == "prior" else -1]
+        fopt = stage["fopt"]
+        summary_rows.append(
+            {
+                "strategy": strategy,
+                "category": category,
+                "P10": fopt["P10"],
+                "P50": fopt["P50"],
+                "P90": fopt["P90"],
+                "truth": fopt["truth"],
+                "covered": fopt["covered"],
+                "mean_normalized_data_misfit": stage["mean_normalized_data_misfit"],
+                "n_sim": report["n_sim"],
+                "n_failed": report["n_failed"],
+                "source_report": path.as_posix(),
+                "source_report_sha256": sha256_file(path),
+                "config_hash": report["config_hash"],
+                "source_artifact": report["artifact"]["path"],
+                "source_artifact_sha256": report["artifact"]["sha256"],
+                "source_git_commit": report["artifact"]["git_commit"],
+                "derived_git_commit": derived_git_commit,
+            }
+        )
     _write_csv(args.connectivity_output, connectivity_rows)
     _write_csv(args.bimodality_output, bimodality_rows)
     _write_csv(args.breakthrough_output, breakthrough_rows)
+    _write_csv(args.summary_output, summary_rows)
     print(
         json.dumps(
             {
                 "connectivity_rows": len(connectivity_rows),
                 "bimodality_rows": len(bimodality_rows),
                 "breakthrough_rows": len(breakthrough_rows),
+                "summary_rows": len(summary_rows),
             },
             sort_keys=True,
         )

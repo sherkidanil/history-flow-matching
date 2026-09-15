@@ -46,6 +46,20 @@ parameters) took 1.83 seconds and peaked at 1,044,154,880 allocated CUDA bytes.
 The shared 16-epoch budget is therefore 5,008 optimizer steps per strategy;
 this budget was fixed before fitting any of the three scientific models.
 
+The complete 5,000-member MPS generation used 32 worker processes and the same
+source-built MPSlib commit. The elapsed time between the launch PID-file mtime
+and final HDF5 mtime was 5,576.82 seconds (92.95 minutes). The result occupied
+295,252,077 bytes. Its subsequent FM training ran on an A100 80 GB with Torch
+2.4.1+cu121, 772,241 parameters, and 5,008 optimizer steps; the first, final,
+and minimum recorded losses were 2.07466, 0.29491, and 0.20995.
+
+The restart-free Egg realization-100 truth run took approximately 32 seconds
+from measured launch/output timestamps and produced only a 1,400-byte SMSPEC
+and 25,920-byte UNSMRY. It completed all 120 monthly output points through day
+3,600 with terminal FOPT 505,246.84375 m3. A 100-member, 16-worker Egg forward
+batch completed without failures; individual measured runtimes summed to
+3,934.83 seconds while wall time was reduced by concurrency.
+
 <!-- BEGIN AUTO-GENERATED M0 PROBE -->
 ## Latest measured M0 probe
 

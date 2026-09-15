@@ -74,3 +74,16 @@ Entries must be dated and must distinguish measured facts from hypotheses.
 - Axis-aligned property correlation lengths and the `porosity >= 0.20` truth
   sand definition are operational validation choices, documented in the config
   and validation output rather than represented as published facts.
+- The Egg archive does not prescribe a history/forecast split or observation
+  error model for this experiment. The held-out inversion therefore uses the
+  first 1,800 of 3,600 days, 90-day WOPR/WWPR observations, 5% independent
+  relative errors, and a 1 m3/day standard-deviation floor. These choices are
+  labelled `ASSUMED` in `configs/egg/inversion.yaml` and are held identical for
+  raw, PCA, and FM.
+- Numerical Egg generator acceptance limits were not fixed before the first
+  three complete pilots. They are retained as a
+  `retrospective_after_complete_pilots` engineering gate in
+  `configs/egg/generator_acceptance.yaml`, not presented as confirmatory
+  pre-registration. Under this gate augmentation and MPS pass; procedural
+  generation fails the KS, X/Y variogram, and spanning-connectivity criteria,
+  so no procedural inversion is run.
