@@ -16,6 +16,7 @@ dependencies = [
   "pyyaml>=6.0,<7",
   "resdata>=6.3.5,<7",
   "scipy>=1.11,<2",
+  "torch>=2.2,<3",
 ]
 
 

@@ -22,6 +22,13 @@ container wrapper discards all other simulator files by default. Set
 `OPM_KEEP_SIMULATOR_FILES=1` only for the small number of explicitly selected
 visualization runs.
 
+The macOS development environment was re-probed after adding PyTorch: Torch
+2.14.0 detects and selects the Apple MPS device. Both the 3D U-Net and UNO
+models completed a `(1, 1, 5, 28, 19)` forward pass on MPS. A deterministic
+two-step CPU training smoke test on eight reduced-prior realizations completed
+with finite losses; this is an implementation check, not a trained scientific
+model.
+
 <!-- BEGIN AUTO-GENERATED M0 PROBE -->
 ## Latest measured M0 probe
 

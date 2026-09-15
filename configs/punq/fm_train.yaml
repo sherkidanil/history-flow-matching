@@ -1,0 +1,46 @@
+# Provisional PUNQ-S3 conditional flow-matching training configuration.
+# Hyperparameters without an explicit citation are ASSUMED experiment choices.
+seed: 20260915
+data:
+  artifact: ../../artifacts/punq_prior_30000.h5
+  field: logk
+  padding_zyx: [8, 32, 24]
+  remove_layer_trend: true
+source:
+  kind: matern
+  nu: 1.5
+  # Measured on the accepted 256-member reduced prior; refit on the full prior.
+  corr_len_cells_zyx: [0.250057, 2.166353, 1.909702]
+model:
+  primary: unet3d
+  unet3d:
+    in_channels: 1
+    base_channels: 32
+    time_dim: 128
+    coarse_attention_only: true
+  uno3d:
+    in_channels: 1
+    hidden_channels: 32
+    time_dim: 128
+    modes_zyx: [4, 12, 12]
+    blocks: 4
+training:
+  batch_size: 32
+  epochs: 200
+  learning_rate: 0.0002
+  weight_decay: 0.00001
+  gradient_clip_norm: 1.0
+  ema_decay: 0.999
+  checkpoint_policy: ema_and_latest_resume_only
+integration:
+  method: heun
+  default_steps: 50
+  ablation_steps: [10, 20, 50, 100]
+acceptance:
+  sample_count: 5000
+  reference_count: 5000
+  ks_statistic_max: 0.05  # ASSUMED predeclared criterion.
+  variogram_envelope_coverage_min: 0.90  # ASSUMED predeclared criterion.
+  facies_fraction_standardized_error_max: 2.0  # ASSUMED criterion.
+  cluster_size_normalized_wasserstein_max: 0.50  # ASSUMED criterion.
+  roundtrip_relative_error_max: 0.01
