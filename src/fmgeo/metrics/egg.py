@@ -9,10 +9,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy import ndimage, stats
 
-from fmgeo.metrics.geology import (
-    experimental_variogram,
-    well_column_connectivity_probability,
-)
+from fmgeo.metrics.geology import experimental_variogram
 
 EggMetricValue = float | int
 GENERATOR_ACCEPTANCE_METRICS = (
@@ -74,13 +71,19 @@ def egg_well_connectivity(
     if not injectors or not producers:
         raise ValueError("well map must contain injectors and producers")
     sand = values >= threshold
-    return {
-        (injector, producer): well_column_connectivity_probability(
-            sand, wells[injector], wells[producer]
-        )
-        for injector in injectors
-        for producer in producers
-    }
+    pairs = [(injector, producer) for injector in injectors for producer in producers]
+    counts = dict.fromkeys(pairs, 0)
+    structure = ndimage.generate_binary_structure(3, 1)
+    for field in sand:
+        components, _ = ndimage.label(field, structure=structure)
+        column_labels = {
+            name: set(np.unique(components[:, wells[name][0], wells[name][1]])) - {0}
+            for name in (*injectors, *producers)
+        }
+        for pair in pairs:
+            if column_labels[pair[0]] & column_labels[pair[1]]:
+                counts[pair] += 1
+    return {pair: counts[pair] / len(sand) for pair in pairs}
 
 
 def _sample_active_values(
