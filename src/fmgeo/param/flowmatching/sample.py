@@ -55,18 +55,41 @@ class FlowTransform:
     model: nn.Module
     steps: int = 50
     method: Integrator = "heun"
+    mask: torch.Tensor | None = None
+
+    def _integrate(
+        self, values: torch.Tensor, *, start_time: float, end_time: float
+    ) -> torch.Tensor:
+        if self.mask is None:
+            velocity: Velocity = self.model
+            initial = values
+        else:
+            try:
+                active = torch.broadcast_to(
+                    self.mask.to(device=values.device, dtype=torch.bool), values.shape
+                )
+            except RuntimeError as error:
+                raise ValueError("mask must broadcast to transform inputs") from error
+            initial = torch.where(active, values, torch.zeros_like(values))
+
+            def velocity(state: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
+                masked_state = torch.where(active, state, torch.zeros_like(state))
+                prediction = self.model(masked_state, time)
+                return torch.where(active, prediction, torch.zeros_like(prediction))
+
+        return integrate_ode(
+            velocity,
+            initial,
+            steps=self.steps,
+            method=self.method,
+            start_time=start_time,
+            end_time=end_time,
+        )
 
     @torch.no_grad()
     def forward(self, source: torch.Tensor) -> torch.Tensor:
-        return integrate_ode(self.model, source, steps=self.steps, method=self.method)
+        return self._integrate(source, start_time=0.0, end_time=1.0)
 
     @torch.no_grad()
     def inverse(self, target: torch.Tensor) -> torch.Tensor:
-        return integrate_ode(
-            self.model,
-            target,
-            steps=self.steps,
-            method=self.method,
-            start_time=1.0,
-            end_time=0.0,
-        )
+        return self._integrate(target, start_time=1.0, end_time=0.0)

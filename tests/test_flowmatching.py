@@ -148,6 +148,17 @@ def test_bidirectional_transform_round_trips_controlled_velocity() -> None:
     assert float(relative_error) < 1e-2
 
 
+def test_masked_transform_keeps_inactive_cells_zero() -> None:
+    mask = torch.ones(1, 1, 2, 3, 4, dtype=torch.bool)
+    mask[..., 0, 0, 0] = False
+    source = torch.randn(2, 1, 2, 3, 4)
+    transform = FlowTransform(LinearVelocity(), steps=4, method="heun", mask=mask)
+
+    generated = transform.forward(source)
+
+    assert torch.all(generated[..., 0, 0, 0] == 0)
+
+
 def test_checkpoint_policy_keeps_ema_and_one_resume_file(tmp_path: Path) -> None:
     (tmp_path / "resume-step-1.pt").write_bytes(b"old")
     (tmp_path / "ema-step-1.pt").write_bytes(b"old")
