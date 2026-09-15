@@ -31,6 +31,7 @@ class ForwardResult:
     stderr: str
     cache_hit: bool = False
     workdir: str | None = None
+    metadata: dict[str, object] | None = None
 
 
 Extractor = Callable[[Path], dict[str, object]]
@@ -158,6 +159,7 @@ def run_simulator(
                     runtime_seconds=runtime,
                     returncode=completed.returncode,
                     stderr=completed.stderr,
+                    metadata=cast(dict[str, object] | None, extracted.get("metadata")),
                 )
                 _write_cache(cache_path, result)
             except (KeyError, TypeError, ValueError, OSError) as error:

@@ -46,6 +46,7 @@ def extract_egg_observations(
     oil_rate_relative_sigma: float,
     water_rate_relative_sigma: float,
     rate_sigma_floor: float,
+    water_breakthrough_fraction: float = 0.05,
 ) -> dict[str, Any]:
     """Extract rate observations and their declared independent errors."""
 
@@ -55,6 +56,8 @@ def extract_egg_observations(
         raise ValueError("relative rate errors must be positive")
     if rate_sigma_floor <= 0:
         raise ValueError("rate error floor must be positive")
+    if not 0 < water_breakthrough_fraction < 1:
+        raise ValueError("water breakthrough fraction must be in (0, 1)")
     oil_keys = [f"WOPR:{producer}" for producer in producers]
     water_keys = [f"WWPR:{producer}" for producer in producers]
     keys = ["TIME", "FOPT", *oil_keys, *water_keys]
@@ -74,6 +77,21 @@ def extract_egg_observations(
             np.maximum(np.abs(water) * water_rate_relative_sigma, rate_sigma_floor),
         ]
     )
+    water_cut: dict[str, list[float]] = {}
+    breakthrough_day: dict[str, float | None] = {}
+    for producer, oil_key, water_key in zip(producers, oil_keys, water_keys, strict=True):
+        oil_rate = vectors[oil_key]
+        water_rate = vectors[water_key]
+        total_rate = oil_rate + water_rate
+        cut = np.divide(
+            water_rate,
+            total_rate,
+            out=np.zeros_like(water_rate),
+            where=np.abs(total_rate) > np.finfo(np.float64).eps,
+        )
+        hits = np.flatnonzero(cut >= water_breakthrough_fraction)
+        water_cut[producer] = cut.tolist()
+        breakthrough_day[producer] = None if len(hits) == 0 else float(times[hits[0]])
     return {
         "d": observations,
         "sigma": sigma,
@@ -81,6 +99,11 @@ def extract_egg_observations(
         # ForwardResult retains the PUNQ-oriented historical field name. For
         # Egg this value is the terminal (10-year) FOPT from the supplied deck.
         "FOPT_16.5y": float(vectors["FOPT"][-1]),
+        "metadata": {
+            "forecast_times_days": times.tolist(),
+            "water_cut": water_cut,
+            "water_breakthrough_day": breakthrough_day,
+        },
     }
 
 
@@ -119,6 +142,7 @@ def run_egg_forward(
     oil_rate_relative_sigma: float,
     water_rate_relative_sigma: float,
     rate_sigma_floor: float,
+    water_breakthrough_fraction: float = 0.05,
     producers: Sequence[str] = EGG_PRODUCERS,
     timeout: float = 600.0,
     min_free_disk_gb: float = 20.0,
@@ -140,6 +164,8 @@ def run_egg_forward(
         "oil_rate_relative_sigma": oil_rate_relative_sigma,
         "water_rate_relative_sigma": water_rate_relative_sigma,
         "rate_sigma_floor": rate_sigma_floor,
+        "water_breakthrough_fraction": water_breakthrough_fraction,
+        "extractor_schema_version": 2,
     }
 
     def prepare(workdir: Path) -> None:
@@ -155,6 +181,7 @@ def run_egg_forward(
             oil_rate_relative_sigma=oil_rate_relative_sigma,
             water_rate_relative_sigma=water_rate_relative_sigma,
             rate_sigma_floor=rate_sigma_floor,
+            water_breakthrough_fraction=water_breakthrough_fraction,
         )
 
     cache_key = _egg_cache_key(

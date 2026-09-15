@@ -43,6 +43,10 @@ def test_extract_egg_observations_uses_exact_history_schedule(
     np.testing.assert_array_equal(result["d"], [20.0, 40.0, 25.0, 45.0, 2.0, 4.0, 2.5, 4.5])
     np.testing.assert_array_equal(result["sigma"], [1.0, 2.0, 1.25, 2.25, 1.0, 1.0, 1.0, 1.0])
     assert result["FOPT_16.5y"] == 5.0
+    assert result["metadata"]["water_breakthrough_day"] == {
+        "PROD1": 30.0,
+        "PROD2": 30.0,
+    }
 
 
 def test_extract_egg_observations_rejects_nonmatching_schedule(
