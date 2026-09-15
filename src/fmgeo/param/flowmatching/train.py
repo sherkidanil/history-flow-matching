@@ -233,6 +233,7 @@ def train_flow_matching(
     seed: int,
     ema_decay: float = 0.999,
     gradient_clip_norm: float = 1.0,
+    on_epoch: Callable[[int, ExponentialMovingAverage], None] | None = None,
 ) -> tuple[list[float], ExponentialMovingAverage]:
     """Train deterministically from an in-memory normalized prior tensor."""
     if targets.ndim != 5 or epochs <= 0 or gradient_clip_norm <= 0:
@@ -263,6 +264,8 @@ def train_flow_matching(
             optimizer.step()
             ema.update(model)
             history.append(float(loss.detach()))
+        if on_epoch is not None:
+            on_epoch(epoch + 1, ema)
     return history, ema
 
 
@@ -282,6 +285,20 @@ def _atomic_torch_save(payload: dict[str, Any], destination: Path) -> None:
     finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
+
+
+def save_ema_snapshot(
+    directory: str | Path, *, epoch: int, state: dict[str, Any]
+) -> Path:
+    """Atomically save one explicitly requested ablation EMA snapshot."""
+
+    if epoch <= 0:
+        raise ValueError("snapshot epoch must be positive")
+    root = Path(directory)
+    root.mkdir(parents=True, exist_ok=True)
+    destination = root / f"ema-epoch-{epoch:04d}.pt"
+    _atomic_torch_save(state, destination)
+    return destination
 
 
 def save_checkpoint_policy(

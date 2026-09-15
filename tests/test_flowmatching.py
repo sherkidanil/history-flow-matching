@@ -20,6 +20,7 @@ from fmgeo.param.flowmatching.train import (
     masked_flow_matching_loss,
     save_checkpoint_policy,
     seeded_batch_indices,
+    train_flow_matching,
 )
 
 
@@ -39,6 +40,16 @@ class GlobalMeanVelocity(nn.Module):
     def forward(self, x: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
         del time
         return torch.ones_like(x) * x.mean()
+
+
+class TrainableScaleVelocity(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.scale = nn.Parameter(torch.tensor(0.0))
+
+    def forward(self, x: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
+        del time
+        return self.scale * x
 
 
 def test_masked_loss_ignores_inactive_and_padded_cells() -> None:
@@ -209,3 +220,26 @@ def test_checkpoint_policy_keeps_ema_and_one_resume_file(tmp_path: Path) -> None
 
     assert {path.name for path in tmp_path.glob("*.pt")} == {"ema.pt", "resume.pt"}
     assert torch.load(tmp_path / "resume.pt", weights_only=True)["step"] == 2
+
+
+def test_training_reports_each_completed_epoch_to_snapshot_callback() -> None:
+    model = TrainableScaleVelocity()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    targets = torch.ones(4, 1, 1, 2, 2)
+    mask = torch.ones(1, 1, 1, 2, 2, dtype=torch.bool)
+    completed: list[int] = []
+
+    losses, _ = train_flow_matching(
+        model,
+        targets=targets,
+        source_sampler=WhiteSourceSampler((1, 2, 2)),
+        active_mask=mask,
+        optimizer=optimizer,
+        epochs=2,
+        batch_size=2,
+        seed=91,
+        on_epoch=lambda epoch, ema: completed.append(epoch),
+    )
+
+    assert len(losses) == 4
+    assert completed == [1, 2]

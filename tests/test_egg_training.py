@@ -109,7 +109,8 @@ def test_egg_training_script_enforces_budget_and_writes_checkpoint(tmp_path: Pat
                     "weight_decay": 0.0,
                     "gradient_clip_norm": 1.0,
                     "ema_decay": 0.9,
-                    "checkpoint_policy": "ema_and_latest_resume_only",
+                    "checkpoint_policy": "ema_snapshots_and_latest_resume",
+                    "evaluation_epochs": [1],
                 },
                 "integration": {"method": "heun", "steps": 2},
                 "evaluation": {
@@ -154,7 +155,12 @@ def test_egg_training_script_enforces_budget_and_writes_checkpoint(tmp_path: Pat
     )
     assert completed.returncode == 0, completed.stderr
 
-    assert {path.name for path in output.glob("*.pt")} == {"ema.pt", "resume.pt"}
+    assert {path.name for path in output.glob("*.pt")} == {
+        "ema.pt",
+        "ema-epoch-0001.pt",
+        "resume.pt",
+    }
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert payload["optimization_steps"] == 1
+    assert payload["evaluation_epochs"] == [1]
     assert payload["parameter_count"] > 0

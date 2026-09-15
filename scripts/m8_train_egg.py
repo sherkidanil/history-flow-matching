@@ -13,7 +13,7 @@ import h5py  # type: ignore[import-untyped]
 import numpy as np
 import torch
 import yaml
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from fmgeo.artifacts import (
     canonical_config_hash,
@@ -24,9 +24,11 @@ from fmgeo.artifacts import (
 from fmgeo.config import StrictModel
 from fmgeo.param.flowmatching.model_unet3d import UNet3D
 from fmgeo.param.flowmatching.train import (
+    ExponentialMovingAverage,
     LayerTrendNormalizer,
     make_source_sampler,
     save_checkpoint_policy,
+    save_ema_snapshot,
     train_flow_matching,
 )
 from fmgeo.runtime import select_device
@@ -61,7 +63,22 @@ class TrainingConfig(StrictModel):
     weight_decay: float = Field(ge=0)
     gradient_clip_norm: float = Field(gt=0)
     ema_decay: float = Field(gt=0, lt=1)
-    checkpoint_policy: Literal["ema_and_latest_resume_only"]
+    checkpoint_policy: Literal[
+        "ema_and_latest_resume_only", "ema_snapshots_and_latest_resume"
+    ]
+    evaluation_epochs: tuple[int, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_snapshots(self) -> TrainingConfig:
+        requested = self.evaluation_epochs
+        if tuple(sorted(set(requested))) != requested:
+            raise ValueError("evaluation epochs must be unique and increasing")
+        if any(epoch < 1 or epoch > self.epochs for epoch in requested):
+            raise ValueError("evaluation epochs must lie inside the training run")
+        snapshots = self.checkpoint_policy == "ema_snapshots_and_latest_resume"
+        if snapshots != bool(requested):
+            raise ValueError("snapshot policy and evaluation epochs must be enabled together")
+        return self
 
 
 class IntegrationConfig(StrictModel):
@@ -165,6 +182,28 @@ def main() -> int:
         nu=config.source.nu,
         corr_len_scale=config.source.corr_len_scale,
     )
+    config_hash = canonical_config_hash(config)
+    data_hash = sha256_file(args.data)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    for obsolete in args.output_dir.glob("ema-epoch-*.pt"):
+        obsolete.unlink()
+    common = {
+        "strategy": args.strategy,
+        "config_hash": config_hash,
+        "data_sha256": data_hash,
+        "model_config": config.model.model_dump(mode="json"),
+        "normalizer_mean": normalizer.mean,
+        "normalizer_scale": normalizer.scale,
+    }
+
+    def snapshot_epoch(epoch: int, ema: ExponentialMovingAverage) -> None:
+        if epoch in config.training.evaluation_epochs:
+            save_ema_snapshot(
+                args.output_dir,
+                epoch=epoch,
+                state={**common, "model": ema.state_dict()},
+            )
+
     losses, ema = train_flow_matching(
         model,
         targets=normalized,
@@ -176,19 +215,9 @@ def main() -> int:
         seed=config.seed,
         ema_decay=config.training.ema_decay,
         gradient_clip_norm=config.training.gradient_clip_norm,
+        on_epoch=snapshot_epoch,
     )
 
-    config_hash = canonical_config_hash(config)
-    data_hash = sha256_file(args.data)
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    common = {
-        "strategy": args.strategy,
-        "config_hash": config_hash,
-        "data_sha256": data_hash,
-        "model_config": config.model.model_dump(mode="json"),
-        "normalizer_mean": normalizer.mean,
-        "normalizer_scale": normalizer.scale,
-    }
     save_checkpoint_policy(
         args.output_dir,
         ema_state={**common, "model": ema.state_dict()},
@@ -213,7 +242,7 @@ def main() -> int:
             config_hash=config_hash,
             git_commit=git_commit,
         )
-        for checkpoint in (args.output_dir / "ema.pt", args.output_dir / "resume.pt")
+        for checkpoint in sorted(args.output_dir.glob("*.pt"))
     ]
     update_manifest_atomic(args.manifest, records)
     loss_summary = {
@@ -231,6 +260,7 @@ def main() -> int:
         "platform": platform.platform(),
         "parameter_count": parameter_count,
         "optimization_steps": len(losses),
+        "evaluation_epochs": list(config.training.evaluation_epochs),
         "loss": {**loss_summary, "history": losses},
         "artifacts": [record.model_dump(mode="json") for record in records],
     }
