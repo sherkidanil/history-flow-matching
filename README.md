@@ -17,14 +17,14 @@ cross-resolution experiment are implemented with content-addressed artifacts.
 M0 is verified against SPE1 with Flow 2026.04. PUNQ-S3 assimilation remains
 blocked because the available truth deck fails the published-FOPT validation
 gate; no PUNQ benchmark result is claimed. Measured details are in
-[`REPORTS/REPORT.md`](REPORTS/REPORT.md), the execution environment is in
+[`REPORT.md`](REPORT.md), the execution environment is in
 [`ENVIRONMENT.md`](ENVIRONMENT.md), and exact commands are in
 [`REPRODUCE.md`](REPRODUCE.md).
 
 ## Scientific results
 
 The complete measured scientific report is available at
-[`REPORTS/REPORT.md`](REPORTS/REPORT.md). Publication figures are stored as
+[`REPORT.md`](REPORT.md). Publication figures are stored as
 GitHub-viewable SVG files and matching vector PDFs.
 
 [![Egg posterior comparison](results/figures/egg_posterior_comparison.svg)](results/figures/egg_posterior_comparison.pdf)

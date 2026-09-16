@@ -1,0 +1,100 @@
+{
+  "artifact": {
+    "config_hash": "4cd0e90f32fed9a2d382f18e542adba6689b92534aaa4373c622a928b2f6c944",
+    "created_at": "2026-09-15T13:26:29.380434Z",
+    "dtype": "float32",
+    "git_commit": "8feec05e63599aa6b413edc332d2625828f92214",
+    "path": "artifacts/egg_inversion_augmentation_pca.h5",
+    "sha256": "5660fd4abc89298edeaabc03a64eab911066eb016be431e515456433da0a7924",
+    "shape": [
+      5,
+      100,
+      7,
+      60,
+      60
+    ],
+    "size_bytes": 38290647
+  },
+  "benchmark": "Egg",
+  "config_hash": "4cd0e90f32fed9a2d382f18e542adba6689b92534aaa4373c622a928b2f6c944",
+  "method": "pca",
+  "n_failed": 0,
+  "n_sim": 500,
+  "observation_count": 160,
+  "observation_noise_seed": 20260915,
+  "parameterization": {
+    "pca_explained_variance_fraction": 0.9528626836160355,
+    "pca_rank": 85
+  },
+  "prior_sha256": "eff49cf09c0794d4c1d510811820345ae2c1a5fcb8e575c57d7cc7abe563dd48",
+  "stages": [
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 496925.51875,
+        "P50": 501356.0,
+        "P90": 507570.578125,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 135.2560103525796,
+      "runtime_seconds_sum": 5501.106440410018,
+      "stage": 0
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 502670.65625,
+        "P50": 506139.609375,
+        "P90": 508998.7375,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 11.933877744402034,
+      "runtime_seconds_sum": 5432.359284631908,
+      "stage": 1
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 504392.615625,
+        "P50": 505865.453125,
+        "P90": 507376.7125,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 4.753611432860644,
+      "runtime_seconds_sum": 3924.9520369693637,
+      "stage": 2
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 503579.240625,
+        "P50": 504883.15625,
+        "P90": 506091.153125,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 2.757747993550861,
+      "runtime_seconds_sum": 3900.294668368995,
+      "stage": 3
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 503833.58125,
+        "P50": 504820.609375,
+        "P90": 505850.003125,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 1.8851961727427389,
+      "runtime_seconds_sum": 3899.104815378785,
+      "stage": 4
+    }
+  ],
+  "strategy": "augmentation",
+  "truth_case": "scratch/egg_truth_perm100/EGG",
+  "truth_terminal_fopt": 505246.84375
+}

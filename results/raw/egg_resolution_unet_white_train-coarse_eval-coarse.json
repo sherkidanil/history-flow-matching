@@ -1,0 +1,62 @@
+{
+  "artifact": {
+    "config_hash": "c80e0eeb50d63af71d85eb9197fe2ebcc526fd0d4d537f09cb7221f530a6973c",
+    "created_at": "2026-09-16T06:59:23.219551Z",
+    "dtype": "float32",
+    "git_commit": "dd7a6719abf345b7db5c4a45c471950e0a84c9ac",
+    "path": "artifacts/egg_resolution_samples_unet_white_train-coarse_eval-coarse.h5",
+    "sha256": "d2a38ecb512cfc6e112fcd924b149bdcdc8c5a19302f3d1163426f87dede4770",
+    "shape": [
+      128,
+      7,
+      30,
+      30
+    ],
+    "size_bytes": 2072193
+  },
+  "benchmark": "Egg",
+  "checkpoint": "artifacts/egg_models/resolution_unet_white_coarse/ema-epoch-0016.pt",
+  "checkpoint_epoch": 16,
+  "evaluation_shape_zyx": [
+    7,
+    30,
+    30
+  ],
+  "high_permeability_threshold_logk": 6.822924613952637,
+  "integration_steps": 50,
+  "max_variogram_lag": 10,
+  "metric_config_hash": "8013599351eeb093630e98a8069028dde4c6f6af31d82f706e163abce6b29315",
+  "metrics": {
+    "bimodality_abs_error": 0.010974766240147482,
+    "bimodality_generated": 0.5648813744954059,
+    "bimodality_reference": 0.5539066082552584,
+    "marginal_ks": 0.013538220426766112,
+    "metric_sample_cells_generated": 200000,
+    "metric_sample_cells_reference": 48270,
+    "metric_sample_fields_generated": 128,
+    "metric_sample_fields_reference": 10,
+    "schema_version": 1,
+    "spanning_fraction_abs_error": 0.2828125,
+    "spanning_fraction_generated": 0.1171875,
+    "spanning_fraction_reference": 0.4,
+    "variogram_x_nrmse": 0.05155460121216563,
+    "variogram_y_nrmse": 0.02896258443026496
+  },
+  "model_kind": "unet3d",
+  "roundtrip_relative_error": 0.0003322737175039947,
+  "sample_config_hash": "c80e0eeb50d63af71d85eb9197fe2ebcc526fd0d4d537f09cb7221f530a6973c",
+  "sample_count": 128,
+  "source_corr_len_cells_zyx": [
+    1.0,
+    2.0,
+    4.0
+  ],
+  "source_kind": "white",
+  "strategy": "augmentation",
+  "training_config_hash": "41b95262620c42bdaa911c74ba21a43f00a3d17d86e6161c4675ce143a53292c",
+  "training_shape_zyx": [
+    7,
+    30,
+    30
+  ]
+}

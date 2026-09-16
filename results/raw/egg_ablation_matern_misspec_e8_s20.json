@@ -1,0 +1,44 @@
+{
+  "artifact": {
+    "config_hash": "5a41876eafef59f158cd450524b9103aa302ce3807d01c0c8996bf9fbf6687f7",
+    "created_at": "2026-09-16T06:12:23.052067Z",
+    "dtype": "float32",
+    "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+    "path": "artifacts/egg_ablation_samples_matern_misspec_e8_s20.h5",
+    "sha256": "a45eceb94a858bde9b639585c0241f10e06ed8ec5fa5cd4c362f9ff2a6a9e711",
+    "shape": [
+      128,
+      7,
+      60,
+      60
+    ],
+    "size_bytes": 7712887
+  },
+  "benchmark": "Egg",
+  "checkpoint": "artifacts/egg_models/ablation_matern_misspec/ema-epoch-0008.pt",
+  "checkpoint_epoch": 8,
+  "high_permeability_threshold_logk": 6.8484296798706055,
+  "integration_steps": 20,
+  "metric_config_hash": "8013599351eeb093630e98a8069028dde4c6f6af31d82f706e163abce6b29315",
+  "metrics": {
+    "bimodality_abs_error": 0.03659568254962092,
+    "bimodality_generated": 0.49294861945906954,
+    "bimodality_reference": 0.4563529369094486,
+    "marginal_ks": 0.07628914407373477,
+    "metric_sample_cells_generated": 200000,
+    "metric_sample_cells_reference": 185530,
+    "metric_sample_fields_generated": 128,
+    "metric_sample_fields_reference": 10,
+    "schema_version": 1,
+    "spanning_fraction_abs_error": 0.029687500000000006,
+    "spanning_fraction_generated": 0.0703125,
+    "spanning_fraction_reference": 0.1,
+    "variogram_x_nrmse": 0.2429871758163035,
+    "variogram_y_nrmse": 0.23424833183672295
+  },
+  "roundtrip_relative_error": 0.005448865704238415,
+  "sample_config_hash": "5a41876eafef59f158cd450524b9103aa302ce3807d01c0c8996bf9fbf6687f7",
+  "sample_count": 128,
+  "strategy": "augmentation",
+  "training_config_hash": "3cbd59bad34ca6bc93d62c12fa04117f77a89a51b9cdf8fc91d0c8eb8ac63bcb"
+}

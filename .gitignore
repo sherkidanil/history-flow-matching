@@ -3,8 +3,7 @@
 SOUL.md
 repo.md
 MEMORY/
-REPORTS/*
-!REPORTS/REPORT.md
+REPORTS/
 TASKS/
 docs/plans/
 
@@ -36,6 +35,7 @@ artifacts/*
 !artifacts/MANIFEST.json
 results/raw/*
 !results/raw/.gitkeep
+!results/raw/*.json
 
 # Simulator scratch and restart output
 scratch/

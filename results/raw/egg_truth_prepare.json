@@ -1,0 +1,19 @@
+{
+  "benchmark": "Egg",
+  "deck": "scratch/egg_truth/EGG.DATA",
+  "input_hashes": {
+    "data/egg/Egg_Model_Data_Files_v2/Eclipse/ACTIVE.INC": "196196383777a4c17d5131a675f3d601b0f22baef70a84ed66e993703e75b9f6",
+    "data/egg/Egg_Model_Data_Files_v2/Eclipse/COMPDAT.INC": "5b03e7f974c42ef91f957fa94be433c7ad8ed8ac721720d071e9795a99c5a545",
+    "data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA": "2e3c959cbd4847c480252ff43d5de1c980fa4565172ea3cd1b66d110ee5fa886",
+    "data/egg/Egg_Model_Data_Files_v2/Eclipse/SCHEDULE_NEW.INC": "e95edcdc23560671748e0a3355563e00798fb821d0e604fa670e9477c572ee11",
+    "data/egg/Egg_Model_Data_Files_v2/Eclipse/mDARCY.INC": "5d6a9cd8b1d4bcbec91cca76f648cf00002ab221bb85251164af66f90be487c1"
+  },
+  "output_hashes": {
+    "scratch/egg_truth/ACTIVE.INC": "196196383777a4c17d5131a675f3d601b0f22baef70a84ed66e993703e75b9f6",
+    "scratch/egg_truth/COMPDAT.INC": "5b03e7f974c42ef91f957fa94be433c7ad8ed8ac721720d071e9795a99c5a545",
+    "scratch/egg_truth/EGG.DATA": "7d3b33b3088a302198ef06d51d7363350e5aff77c44c4a339da3f84828cc8477",
+    "scratch/egg_truth/SCHEDULE_NEW.INC": "e95edcdc23560671748e0a3355563e00798fb821d0e604fa670e9477c572ee11",
+    "scratch/egg_truth/mDARCY.INC": "5d6a9cd8b1d4bcbec91cca76f648cf00002ab221bb85251164af66f90be487c1"
+  },
+  "restart_output": false
+}

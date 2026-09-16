@@ -8,7 +8,6 @@ from pathlib import Path
 
 PROHIBITED_FILES = {".env", "SOUL.md", "repo.md"}
 PROHIBITED_PREFIXES = ("MEMORY/", "REPORTS/", "TASKS/", "docs/plans/")
-PUBLIC_FILES = {"REPORTS/REPORT.md"}
 
 
 def _git_lines(repo: Path, *args: str) -> list[str]:
@@ -28,8 +27,7 @@ def find_tracked_prohibited(repo: Path) -> list[str]:
     return sorted(
         path
         for path in paths
-        if path not in PUBLIC_FILES
-        and (path in PROHIBITED_FILES or path.startswith(PROHIBITED_PREFIXES))
+        if path in PROHIBITED_FILES or path.startswith(PROHIBITED_PREFIXES)
     )
 
 

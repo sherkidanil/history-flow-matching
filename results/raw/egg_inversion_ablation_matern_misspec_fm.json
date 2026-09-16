@@ -1,0 +1,103 @@
+{
+  "artifact": {
+    "config_hash": "e76f9e162623e8f68dbfbc680c944ced8580285d0741a50305ea6535e7161c59",
+    "created_at": "2026-09-16T07:41:49.009098Z",
+    "dtype": "float32",
+    "git_commit": "1cc00ab467c4bd8cf37a210b1e0477030f7383db",
+    "path": "artifacts/egg_inversion_ablation_matern_misspec_fm.h5",
+    "sha256": "4695c2db18117d41ce45a201ec0b34d517947c96a43756e1d93a207633cef719",
+    "shape": [
+      5,
+      100,
+      7,
+      60,
+      60
+    ],
+    "size_bytes": 72580223
+  },
+  "benchmark": "Egg",
+  "config_hash": "e76f9e162623e8f68dbfbc680c944ced8580285d0741a50305ea6535e7161c59",
+  "method": "fm",
+  "n_failed": 0,
+  "n_sim": 500,
+  "observation_count": 160,
+  "observation_noise_seed": 20260915,
+  "parameterization": {
+    "checkpoint_sha256": "9aac7591e2a7e8a04c2e8fa01453ef740cb1b1eeb87c0d78ff153ec255c56d80",
+    "device": "cuda",
+    "fm_config_hash": "3cbd59bad34ca6bc93d62c12fa04117f77a89a51b9cdf8fc91d0c8eb8ac63bcb",
+    "training_data_sha256": "e03ae3a9bfc338b0c972ed4d2a7b4e9e2dfa7cc4c9c80f6223a125386797a4b7"
+  },
+  "parameterization_label": "matern_misspec",
+  "prior_sha256": "eff49cf09c0794d4c1d510811820345ae2c1a5fcb8e575c57d7cc7abe563dd48",
+  "stages": [
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 495561.565625,
+        "P50": 501790.34375,
+        "P90": 506923.625,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 136.79503843677628,
+      "runtime_seconds_sum": 3711.054903835058,
+      "stage": 0
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 497389.253125,
+        "P50": 503412.359375,
+        "P90": 508700.80625,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 76.4892618144146,
+      "runtime_seconds_sum": 3707.6235943883657,
+      "stage": 1
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 499637.725,
+        "P50": 504137.4375,
+        "P90": 507773.0875,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 52.46070253023677,
+      "runtime_seconds_sum": 3757.3491727635264,
+      "stage": 2
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 498381.775,
+        "P50": 502757.0625,
+        "P90": 506874.521875,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 37.1169339587959,
+      "runtime_seconds_sum": 3675.2055831998587,
+      "stage": 3
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 497431.525,
+        "P50": 502821.734375,
+        "P90": 507127.1,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 26.194299855958423,
+      "runtime_seconds_sum": 3703.033869177103,
+      "stage": 4
+    }
+  ],
+  "strategy": "augmentation",
+  "truth_case": "scratch/egg_truth_perm100/EGG",
+  "truth_terminal_fopt": 505246.84375
+}
