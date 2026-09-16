@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import torch
+import yaml
 from m8_train_egg import load_fm_config
 
 from fmgeo.artifacts import canonical_config_hash, sha256_file
@@ -15,6 +16,23 @@ from fmgeo.param.flowmatching.models import build_velocity_model
 from fmgeo.param.flowmatching.sample import FlowTransform
 from fmgeo.param.flowmatching.train import LayerTrendNormalizer
 from fmgeo.runtime import select_device
+
+
+def compatible_fm_config_hashes(
+    path: Path, config: Any
+) -> tuple[str, ...]:
+    """Return strict hashes for the authored YAML and its validated schema form.
+
+    Older checkpoints predate schema fields that now have defaults. Their
+    provenance hash therefore matches the complete authored YAML, while new
+    checkpoints match the validated model including those explicit defaults.
+    """
+
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("FM configuration root must be a mapping")
+    candidates = (canonical_config_hash(payload), canonical_config_hash(config))
+    return tuple(dict.fromkeys(candidates))
 
 
 def embed_active(parameters: np.ndarray, active: np.ndarray) -> np.ndarray:
@@ -45,9 +63,9 @@ def build_flow_adapter(
     if batch_size < 1:
         raise ValueError("batch size must be positive")
     config = load_fm_config(fm_config_path)
-    config_hash = canonical_config_hash(config)
+    config_hashes = compatible_fm_config_hashes(fm_config_path, config)
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-    if checkpoint["strategy"] != strategy or checkpoint["config_hash"] != config_hash:
+    if checkpoint["strategy"] != strategy or checkpoint["config_hash"] not in config_hashes:
         raise ValueError("FM checkpoint strategy or configuration does not match")
     if checkpoint["data_sha256"] != sha256_file(training_data):
         raise ValueError("FM checkpoint training-data hash does not match")
@@ -91,7 +109,8 @@ def build_flow_adapter(
 
     metadata: dict[str, object] = {
         "device": selected,
-        "fm_config_hash": config_hash,
+        "fm_config_hash": checkpoint["config_hash"],
+        "fm_config_accepted_hashes": list(config_hashes),
         "checkpoint_sha256": sha256_file(checkpoint_path),
         "training_data_sha256": sha256_file(training_data),
     }
