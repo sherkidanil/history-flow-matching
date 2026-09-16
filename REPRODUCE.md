@@ -218,6 +218,29 @@ This diagnostic compares the completed FM inversion with the closest existing
 raw and PCA ES-MDA stages. An intermediate stage is not equivalent to a
 completed run with fewer assimilations; the table records that limitation.
 
+Before applying any inversion remedy, measure stage-0 linear response, decoder
+midpoint nonlinearity on 200 fixed member pairs, and every FM latent-to-field
+update shift:
+
+```bash
+uv run python scripts/f2_linearity_diagnostics.py \
+  --config configs/egg/inversion.yaml \
+  --fm-config configs/egg/fm_train.yaml \
+  --checkpoint artifacts/egg_models/augmentation/ema.pt \
+  --training-data artifacts/egg_augmentation_5000.h5 \
+  --prior-fields artifacts/egg_fm_samples_augmentation_1000.h5 \
+  --inversion artifacts/egg_inversion_augmentation_raw.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm.h5 \
+  --pair-count 200 \
+  --pair-seed 20260915 \
+  --device auto \
+  --output-table results/tables/f2_linearity.csv \
+  --output-json results/raw/f2_linearity.json
+```
+
+This command performs neural-network inference but no OPM simulations.
+
 ## Matérn source ablation
 
 Train the three strictly controlled source variants. Each run retains only EMA

@@ -15,6 +15,7 @@ from fmgeo.inverse.egg import (
 
 repository = Path(__file__).parents[1]
 sys.path.insert(0, str(repository / "scripts"))
+from egg_flow_adapter import embed_active  # noqa: E402
 from m8_invert_egg import _resolve_parameterization_label  # noqa: E402
 
 sys.path.pop(0)
@@ -63,6 +64,16 @@ def test_parameterization_label_defaults_to_method_and_accepts_fm_variant() -> N
 def test_parameterization_label_rejects_empty_value() -> None:
     with pytest.raises(ValueError, match="non-empty"):
         _resolve_parameterization_label("fm", "  ")
+
+
+def test_embed_active_preserves_parameter_order() -> None:
+    active = np.array([[[True, False], [False, True]]])
+    parameters = np.array([[1.0, 2.0], [3.0, 4.0]])
+
+    fields = embed_active(parameters, active)
+
+    np.testing.assert_array_equal(fields[:, active], parameters)
+    assert np.count_nonzero(fields[:, ~active]) == 0
 
 
 def test_egg_inversion_config_rejects_invalid_inflations(tmp_path: Path) -> None:

@@ -12,8 +12,7 @@ from typing import Literal
 
 import h5py  # type: ignore[import-untyped]
 import numpy as np
-import torch
-from m8_train_egg import load_fm_config
+from egg_flow_adapter import build_flow_adapter, embed_active
 
 from fmgeo.artifacts import (
     canonical_config_hash,
@@ -28,11 +27,7 @@ from fmgeo.inverse.egg import (
     run_egg_esmda,
 )
 from fmgeo.metrics.uq import coverage, forecast_quantiles
-from fmgeo.param.flowmatching.models import build_velocity_model
-from fmgeo.param.flowmatching.sample import FlowTransform
-from fmgeo.param.flowmatching.train import LayerTrendNormalizer
 from fmgeo.param.pca import PCAParameterization
-from fmgeo.runtime import select_device
 
 Method = Literal["raw", "pca", "fm"]
 
@@ -44,79 +39,6 @@ def _resolve_parameterization_label(method: Method, label: str | None) -> str:
     if not resolved:
         raise ValueError("parameterization label must be non-empty")
     return resolved
-
-
-def _embed_active(parameters: np.ndarray, active: np.ndarray) -> np.ndarray:
-    fields = np.zeros((len(parameters), *active.shape), dtype=np.float64)
-    fields[:, active] = parameters
-    return fields
-
-
-def _flow_adapter(
-    initial_fields: np.ndarray,
-    active: np.ndarray,
-    *,
-    checkpoint_path: Path,
-    training_data: Path,
-    fm_config_path: Path,
-    strategy: str,
-    device_name: Literal["auto", "cpu", "mps", "cuda"],
-    batch_size: int,
-) -> tuple[
-    np.ndarray, Callable[[np.ndarray], np.ndarray], dict[str, object]
-]:
-    config = load_fm_config(fm_config_path)
-    config_hash = canonical_config_hash(config)
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-    if checkpoint["strategy"] != strategy or checkpoint["config_hash"] != config_hash:
-        raise ValueError("FM checkpoint strategy or configuration does not match")
-    if checkpoint["data_sha256"] != sha256_file(training_data):
-        raise ValueError("FM checkpoint training-data hash does not match")
-    selected = select_device(
-        device_name,
-        cuda_available=torch.cuda.is_available(),
-        mps_available=bool(torch.backends.mps.is_available()),
-    )
-    device = torch.device(selected)
-    model = build_velocity_model(config.model.model_dump(mode="python")).to(device)
-    model.load_state_dict(checkpoint["model"])
-    model.eval()
-    mask = torch.from_numpy(active)[None, None].to(device)
-    normalizer = LayerTrendNormalizer(
-        mean=checkpoint["normalizer_mean"], scale=checkpoint["normalizer_scale"]
-    )
-    transform = FlowTransform(
-        model, steps=config.integration.steps, method=config.integration.method, mask=mask
-    )
-
-    def apply(values: np.ndarray, *, inverse: bool) -> np.ndarray:
-        batches: list[np.ndarray] = []
-        for start in range(0, len(values), batch_size):
-            tensor = torch.from_numpy(values[start : start + batch_size].astype(np.float32))
-            tensor = tensor[:, None].to(device)
-            if inverse:
-                tensor = normalizer.transform(tensor)
-                transformed = transform.inverse(tensor)
-            else:
-                transformed = transform.forward(tensor)
-                transformed = normalizer.inverse(transformed)
-            transformed = torch.where(mask, transformed, torch.zeros_like(transformed))
-            batches.append(transformed[:, 0].cpu().numpy().astype(np.float64))
-        return np.concatenate(batches)
-
-    latent_fields = apply(initial_fields, inverse=True)
-    initial_parameters = latent_fields[:, active]
-
-    def decode(parameters: np.ndarray) -> np.ndarray:
-        return apply(_embed_active(parameters, active), inverse=False)
-
-    metadata: dict[str, object] = {
-        "device": selected,
-        "fm_config_hash": config_hash,
-        "checkpoint_sha256": sha256_file(checkpoint_path),
-        "training_data_sha256": sha256_file(training_data),
-    }
-    return initial_parameters, decode, metadata
 
 
 def _write_stage(handle: h5py.File, index: int, stage: EggAssimilationStage) -> None:
@@ -188,7 +110,7 @@ def main() -> int:
     decode: Callable[[np.ndarray], np.ndarray]
     if method == "raw":
         initial_parameters = initial_fields[:, active]
-        decode = partial(_embed_active, active=active)
+        decode = partial(embed_active, active=active)
     elif method == "pca":
         pca = PCAParameterization.fit(
             initial_fields[:, active], variance_fraction=config.pca_variance_fraction
@@ -196,14 +118,14 @@ def main() -> int:
         initial_parameters = pca.encode(initial_fields[:, active])
 
         def decode(parameters: np.ndarray) -> np.ndarray:
-            return _embed_active(pca.decode(parameters), active)
+            return embed_active(pca.decode(parameters), active)
 
         parameterization = {
             "pca_rank": pca.rank,
             "pca_explained_variance_fraction": pca.explained_variance_fraction,
         }
     else:
-        initial_parameters, decode, parameterization = _flow_adapter(
+        initial_parameters, decode, parameterization = build_flow_adapter(
             initial_fields,
             active,
             checkpoint_path=args.checkpoint,
