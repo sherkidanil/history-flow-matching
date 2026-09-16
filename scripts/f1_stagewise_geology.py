@@ -190,7 +190,7 @@ def _plot(rows: list[dict[str, object]], svg_path: Path, pdf_path: Path) -> None
     if not rows:
         raise ValueError("trade-off plot requires stagewise rows")
     colors = {"raw": "#440154", "pca": "#21918c", "fm": "#fde725"}
-    figure, axes = plt.subplots(1, 2, figsize=(9.5, 4.2), constrained_layout=True)
+    figure, axes = plt.subplots(1, 2, figsize=(10.5, 4.2), constrained_layout=True)
     for method in METHODS:
         selected = sorted(
             (row for row in rows if row["parameterization"] == method),
@@ -215,9 +215,23 @@ def _plot(rows: list[dict[str, object]], svg_path: Path, pdf_path: Path) -> None
                 label=method.upper(),
             )
             for row, x, y in zip(selected, misfit, values, strict=True):
-                axis.annotate(str(row["stage"]), (x, y), xytext=(4, 4), textcoords="offset points")
+                stage = _as_int(row["stage"])
+                if method == "raw":
+                    offset = (4, 6)
+                elif method == "pca":
+                    offset = (4, -12)
+                else:
+                    offset = (4, 8 - 6 * stage)
+                axis.annotate(
+                    str(stage),
+                    (x, y),
+                    xytext=offset,
+                    textcoords="offset points",
+                    fontsize=8,
+                )
             axis.set(xlabel="Mean normalized data misfit", ylabel=label)
             axis.set_xscale("log")
+            axis.margins(x=0.08, y=0.1)
             axis.grid(alpha=0.25)
     handles, labels = axes[0].get_legend_handles_labels()
     figure.legend(handles, labels, loc="outside lower center", ncol=3)
