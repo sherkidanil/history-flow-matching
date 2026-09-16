@@ -108,6 +108,15 @@ component is 0.78547 before inversion, 0.57181 for raw, 0.47605 for PCA,
 geological morphology better, but that preservation comes with substantially
 worse history matching and a biased-low FOPT forecast in this pilot.
 
+A stagewise diagnostic does not yet provide a genuinely equal-misfit control.
+The stored raw and PCA stages closest to the final FM misfit of 61.92531 are
+both stage 1, with misfits 12.09767 and 11.93388 and absolute gaps 49.82764 and
+49.99143. They already fit the data much better than FM. Consequently the
+existing stage grid cannot separate geological preservation from FM
+under-assimilation, and no equal-misfit advantage is claimed from this control.
+The complete trajectories and explicit diagnostic limitation are in
+`results/tables/egg_stagewise.csv` and `results/tables/egg_matched_misfit.csv`.
+
 The ensemble-score view gives the same ranking. Raw/PCA/FM FOPT CRPS values
 are 217.80/286.25/3,518.04 m3, and their P10–P90 widths are
 2,101.98/2,016.42/8,859.73 m3. Normalizing every production observation by

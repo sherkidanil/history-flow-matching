@@ -4,7 +4,6 @@ import re
 import subprocess
 from pathlib import Path
 
-
 RESULT_PATH = re.compile(r"results/[A-Za-z0-9_./*?-]+")
 
 
