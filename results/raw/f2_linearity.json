@@ -1,0 +1,80 @@
+{
+  "derived_git_commit": "13748ca165c7918d5fb3845535efc907099c115e",
+  "fm_update_shifts": [
+    {
+      "field_relative_shift": 0.11564735954575504,
+      "field_to_latent_shift_ratio": 0.1578937053422621,
+      "latent_relative_shift": 0.7324380620181739,
+      "stage": 1
+    },
+    {
+      "field_relative_shift": 0.10199042840205436,
+      "field_to_latent_shift_ratio": 0.16964497120254363,
+      "latent_relative_shift": 0.6011992438036096,
+      "stage": 2
+    },
+    {
+      "field_relative_shift": 0.0938124370272405,
+      "field_to_latent_shift_ratio": 0.18506596620498955,
+      "latent_relative_shift": 0.5069135019851707,
+      "stage": 3
+    },
+    {
+      "field_relative_shift": 0.09029091931102322,
+      "field_to_latent_shift_ratio": 0.19798044930622272,
+      "latent_relative_shift": 0.4560597757375899,
+      "stage": 4
+    }
+  ],
+  "pair_count": 200,
+  "pair_seed": 20260915,
+  "parameterizations": {
+    "fm": {
+      "available_rank": 99,
+      "checkpoint_sha256": "fce38ca803c9c671a852bc7c1d2fdd7a1ff0b7437f2a4bd23395f3f852016783",
+      "device": "mps",
+      "fm_config_accepted_hashes": [
+        "2d1906d3a78e95237327fae58081c006e94695bcd9b709c3b1659a87287ddb46",
+        "d03877080a35c554b49c2208039db0f87146f7fab48cb6a1c1a3b08753a31a05"
+      ],
+      "fm_config_hash": "2d1906d3a78e95237327fae58081c006e94695bcd9b709c3b1659a87287ddb46",
+      "midpoint_epsilon": {
+        "P10": 0.07576701372824902,
+        "P50": 0.08426564932950067,
+        "P90": 0.09331148182003413
+      },
+      "r2_lin": 1.0,
+      "retained_rank": 99,
+      "source_artifact": "artifacts/egg_inversion_augmentation_fm.h5",
+      "source_artifact_sha256": "9af4e30b975f9862c64a0af1f207effdcf7f2c7c1dc1358488a2a89d20ff27af",
+      "training_data_sha256": "e03ae3a9bfc338b0c972ed4d2a7b4e9e2dfa7cc4c9c80f6223a125386797a4b7"
+    },
+    "pca": {
+      "available_rank": 85,
+      "midpoint_epsilon": {
+        "P10": 1.5793705874545584e-08,
+        "P50": 1.5927576341904147e-08,
+        "P90": 1.6109635998363923e-08
+      },
+      "r2_lin": 0.988304495912275,
+      "retained_rank": 85,
+      "source_artifact": "artifacts/egg_inversion_augmentation_pca.h5",
+      "source_artifact_sha256": "5660fd4abc89298edeaabc03a64eab911066eb016be431e515456433da0a7924"
+    },
+    "raw": {
+      "available_rank": 99,
+      "midpoint_epsilon": {
+        "P10": 0.0,
+        "P50": 0.0,
+        "P90": 0.0
+      },
+      "r2_lin": 1.0,
+      "retained_rank": 99,
+      "source_artifact": "artifacts/egg_inversion_augmentation_raw.h5",
+      "source_artifact_sha256": "a61d18f63925df4e00e0edc9e0e93d6eba71df202f09fd565519a0f082d9bcef"
+    }
+  },
+  "schema_version": 1,
+  "strategy": "augmentation",
+  "svd_energy": 0.999
+}
