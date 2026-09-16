@@ -108,6 +108,7 @@ def main() -> int:
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--training-data", type=Path, required=True)
     parser.add_argument("--target-active-source", type=Path)
+    parser.add_argument("--full-active-source", type=Path)
     parser.add_argument("--realizations-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -169,7 +170,15 @@ def main() -> int:
         raise ValueError("training-data active mask does not match the configuration")
     if active.shape not in (config.data.shape_zyx, EGG_SHAPE):
         raise ValueError("evaluation must use the training or official full Egg resolution")
-    full_active = np.any(ensemble != 0.0, axis=0)
+    full_active_source = args.full_active_source
+    if full_active_source is None and active.shape == EGG_SHAPE:
+        full_active_source = target_active_source
+    if full_active_source is None:
+        raise ValueError("coarse evaluation requires an explicit full-active-source")
+    with h5py.File(full_active_source) as handle:
+        full_active = np.asarray(handle["active_mask"], dtype=bool)
+    if full_active.shape != EGG_SHAPE:
+        raise ValueError("full-active-source must contain the official Egg grid mask")
     reference = _match_reference_resolution(
         ensemble[heldout], full_active=full_active, target_active=active
     )
