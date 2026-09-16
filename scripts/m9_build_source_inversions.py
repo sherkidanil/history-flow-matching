@@ -23,6 +23,7 @@ from fmgeo.metrics.egg import (
     egg_cluster_size_summary,
     egg_well_connectivity,
 )
+from fmgeo.metrics.uq import crps_ensemble, energy_score, interval_width
 
 
 def _labeled_path(value: str) -> tuple[str, Path]:
@@ -175,7 +176,12 @@ def main() -> int:
                 raise ValueError(f"{label} inversion label does not match its artifact")
             if str(handle.attrs["config_hash"]) != str(report["config_hash"]):
                 raise ValueError(f"{label} inversion/report configuration mismatch")
-            fields = np.asarray(handle[_last_stage(handle)]["logk"], dtype=np.float64)
+            final_stage = handle[_last_stage(handle)]
+            fields = np.asarray(final_stage["logk"], dtype=np.float64)
+            fopt_ensemble = np.asarray(final_stage["fopt"], dtype=np.float64)
+            simulated_data = np.asarray(final_stage["simulated_data"], dtype=np.float64)
+            truth_data = np.asarray(handle["truth_data"], dtype=np.float64)
+            sigma = np.asarray(handle["sigma"], dtype=np.float64)
         if report.get("parameterization_label") != label:
             raise ValueError(f"{label} report label does not match")
         if report["artifact"]["sha256"] != artifact_hash:
@@ -193,6 +199,12 @@ def main() -> int:
                 "fopt_p90": fopt["P90"],
                 "truth_fopt": fopt["truth"],
                 "fopt_covered": fopt["covered"],
+                "fopt_p10_p90_width": interval_width(fopt["P10"], fopt["P90"]),
+                "fopt_crps": crps_ensemble(fopt_ensemble, observation=fopt["truth"]),
+                "normalized_observation_energy_score": energy_score(
+                    simulated_data / sigma[None, :],
+                    observation=truth_data / sigma,
+                ),
                 "mean_normalized_data_misfit": final["mean_normalized_data_misfit"],
                 "n_sim": report["n_sim"],
                 "n_failed": report["n_failed"],

@@ -25,6 +25,7 @@ from fmgeo.metrics.egg import (
     egg_cluster_size_summary,
     egg_well_connectivity,
 )
+from fmgeo.metrics.uq import crps_ensemble, energy_score, interval_width
 
 
 def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
@@ -284,6 +285,15 @@ def main() -> int:
         path, report = reports[method]
         stage = report["stages"][0 if category == "prior" else -1]
         fopt = stage["fopt"]
+        artifact_path = artifacts[category][0]
+        with h5py.File(artifact_path) as handle:
+            stage_name = "stage_0" if category == "prior" else _last_stage(handle)
+            fopt_ensemble = np.asarray(handle[stage_name]["fopt"], dtype=np.float64)
+            simulated_data = np.asarray(
+                handle[stage_name]["simulated_data"], dtype=np.float64
+            )
+            truth_data = np.asarray(handle["truth_data"], dtype=np.float64)
+            sigma = np.asarray(handle["sigma"], dtype=np.float64)
         summary_rows.append(
             {
                 "strategy": strategy,
@@ -293,6 +303,11 @@ def main() -> int:
                 "P90": fopt["P90"],
                 "truth": fopt["truth"],
                 "covered": fopt["covered"],
+                "P10_P90_width": interval_width(fopt["P10"], fopt["P90"]),
+                "fopt_crps": crps_ensemble(fopt_ensemble, observation=fopt["truth"]),
+                "normalized_observation_energy_score": energy_score(
+                    simulated_data / sigma[None, :], observation=truth_data / sigma
+                ),
                 "mean_normalized_data_misfit": stage["mean_normalized_data_misfit"],
                 "n_sim": report["n_sim"],
                 "n_failed": report["n_failed"],
