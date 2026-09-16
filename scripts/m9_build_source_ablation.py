@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from m8_train_egg import EggFMConfig, load_fm_config
 
 from fmgeo.artifacts import canonical_config_hash, sha256_file
+from fmgeo.plotting import save_vector_figure
 
 
 def _loss_at_epoch(
@@ -66,6 +67,7 @@ def main() -> int:
     parser.add_argument("--evaluation-report", action="append", type=Path, required=True)
     parser.add_argument("--table-output", type=Path, required=True)
     parser.add_argument("--figure-output", type=Path, required=True)
+    parser.add_argument("--pdf-output", type=Path)
     args = parser.parse_args()
 
     configs: dict[str, tuple[Path, EggFMConfig]] = {
@@ -190,16 +192,20 @@ def main() -> int:
     handles, labels = axes.flat[1].get_legend_handles_labels()
     axes.flat[7].legend(handles, labels, loc="center", fontsize="small")
     figure.suptitle("Egg FM source ablation: training and integration budgets")
-    args.figure_output.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(
+    description = json.dumps(source_hashes, sort_keys=True)
+    save_vector_figure(
+        figure,
         args.figure_output,
-        format="svg",
-        metadata={
-            "Creator": "fmgeo m9_build_source_ablation.py",
-            "Date": None,
-            "Description": json.dumps(source_hashes, sort_keys=True),
-        },
+        creator="fmgeo m9_build_source_ablation.py",
+        description=description,
     )
+    if args.pdf_output is not None:
+        save_vector_figure(
+            figure,
+            args.pdf_output,
+            creator="fmgeo m9_build_source_ablation.py",
+            description=description,
+        )
     plt.close(figure)
     print(json.dumps({"rows": len(rows), "variants": sorted(configs)}, sort_keys=True))
     return 0

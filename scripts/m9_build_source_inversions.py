@@ -24,6 +24,7 @@ from fmgeo.metrics.egg import (
     egg_well_connectivity,
 )
 from fmgeo.metrics.uq import crps_ensemble, energy_score, interval_width
+from fmgeo.plotting import save_vector_figure
 
 
 def _labeled_path(value: str) -> tuple[str, Path]:
@@ -125,12 +126,7 @@ def _plot(path: Path, rows: list[dict[str, object]]) -> None:
     for axis in axes.flat:
         axis.set_xticks(x, labels, rotation=15)
         axis.grid(axis="y", alpha=0.25)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(
-        path,
-        format="svg",
-        metadata={"Creator": "fmgeo m9_build_source_inversions.py", "Date": None},
-    )
+    save_vector_figure(figure, path, creator="fmgeo m9_build_source_inversions.py")
     plt.close(figure)
 
 
@@ -145,6 +141,7 @@ def main() -> int:
     parser.add_argument("--inversion-report", action="append", type=_labeled_path, required=True)
     parser.add_argument("--table-output", type=Path, required=True)
     parser.add_argument("--figure-output", type=Path, required=True)
+    parser.add_argument("--pdf-output", type=Path)
     args = parser.parse_args()
 
     inversions = dict(args.inversion)
@@ -233,6 +230,8 @@ def main() -> int:
     _write_csv(args.table_output, rows)
     plt.rcParams["svg.hashsalt"] = "fmgeo-source-inversions"
     _plot(args.figure_output, rows)
+    if args.pdf_output is not None:
+        _plot(args.pdf_output, rows)
     print(json.dumps({"rows": len(rows)}, sort_keys=True))
     return 0
 

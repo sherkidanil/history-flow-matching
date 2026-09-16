@@ -187,7 +187,9 @@ uv run python scripts/m8_plot_egg_inversion.py \
   --inversion artifacts/egg_inversion_augmentation_pca.h5 \
   --inversion artifacts/egg_inversion_augmentation_fm.h5 \
   --output results/figures/egg_posterior_comparison.svg \
-  --water-cut-output results/figures/egg_water_cut_forecast.svg
+  --pdf-output results/figures/egg_posterior_comparison.pdf \
+  --water-cut-output results/figures/egg_water_cut_forecast.svg \
+  --water-cut-pdf-output results/figures/egg_water_cut_forecast.pdf
 ```
 
 ## Matérn source ablation
@@ -247,7 +249,8 @@ uv run python scripts/m9_build_source_ablation.py \
   --training-report matern_misspec=results/raw/egg_ablation_matern_misspec_training.json \
   "${EVALUATION_ARGS[@]}" \
   --table-output results/tables/egg_source_ablation.csv \
-  --figure-output results/figures/egg_source_ablation.svg
+  --figure-output results/figures/egg_source_ablation.svg \
+  --pdf-output results/figures/egg_source_ablation.pdf
 ```
 
 Run the three final source-inversion comparisons with the same held-out truth,
@@ -291,7 +294,8 @@ uv run python scripts/m9_build_source_inversions.py \
   --inversion-report matern=results/raw/egg_inversion_ablation_matern_fm.json \
   --inversion-report matern_misspec=results/raw/egg_inversion_ablation_matern_misspec_fm.json \
   --table-output results/tables/egg_source_inversions.csv \
-  --figure-output results/figures/egg_source_inversions.svg
+  --figure-output results/figures/egg_source_inversions.svg \
+  --pdf-output results/figures/egg_source_inversions.pdf
 ```
 
 ## Cross-resolution transfer
@@ -404,5 +408,6 @@ uv run python scripts/m9_build_resolution_ablation.py \
   --full-active-source artifacts/egg_augmentation_5000.h5 \
   "${REPORT_ARGS[@]}" \
   --table-output results/tables/ablation_resolution.csv \
-  --figure-output results/figures/ablation_resolution.svg
+  --figure-output results/figures/ablation_resolution.svg \
+  --pdf-output results/figures/ablation_resolution.pdf
 ```

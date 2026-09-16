@@ -15,6 +15,7 @@ from fmgeo.artifacts import sha256_file
 from fmgeo.forward.egg import EGG_PRODUCERS, extract_egg_observations
 from fmgeo.inverse.egg import load_egg_inversion_config
 from fmgeo.metrics.geology import connected_component_sizes
+from fmgeo.plotting import save_vector_figure
 
 
 def _last_stage(handle: h5py.File) -> str:
@@ -70,7 +71,9 @@ def main() -> int:
     parser.add_argument("--evaluation-report", type=Path, required=True)
     parser.add_argument("--inversion", type=Path, action="append", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--pdf-output", type=Path)
     parser.add_argument("--water-cut-output", type=Path, required=True)
+    parser.add_argument("--water-cut-pdf-output", type=Path)
     args = parser.parse_args()
 
     config = load_egg_inversion_config(args.config)
@@ -161,16 +164,19 @@ def main() -> int:
     if image is not None:
         figure.colorbar(image, ax=axes[:3, :], label="ln permeability", shrink=0.8)
     figure.suptitle("Egg held-out inversion: selected fields and ensemble geology")
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(
+    save_vector_figure(
+        figure,
         args.output,
-        format="svg",
-        metadata={
-            "Creator": "fmgeo m8_plot_egg_inversion.py",
-            "Date": None,
-            "Description": json.dumps(sources, sort_keys=True),
-        },
+        creator="fmgeo m8_plot_egg_inversion.py",
+        description=json.dumps(sources, sort_keys=True),
     )
+    if args.pdf_output is not None:
+        save_vector_figure(
+            figure,
+            args.pdf_output,
+            creator="fmgeo m8_plot_egg_inversion.py",
+            description=json.dumps(sources, sort_keys=True),
+        )
     plt.close(figure)
 
     truth_summary = extract_egg_observations(
@@ -210,16 +216,19 @@ def main() -> int:
     water_figure.suptitle("Egg water-cut history and held-out forecast")
     handles, labels = water_axes.flat[0].get_legend_handles_labels()
     water_figure.legend(handles, labels, loc="outside lower center", ncol=6)
-    args.water_cut_output.parent.mkdir(parents=True, exist_ok=True)
-    water_figure.savefig(
+    save_vector_figure(
+        water_figure,
         args.water_cut_output,
-        format="svg",
-        metadata={
-            "Creator": "fmgeo m8_plot_egg_inversion.py",
-            "Date": None,
-            "Description": json.dumps(sources, sort_keys=True),
-        },
+        creator="fmgeo m8_plot_egg_inversion.py",
+        description=json.dumps(sources, sort_keys=True),
     )
+    if args.water_cut_pdf_output is not None:
+        save_vector_figure(
+            water_figure,
+            args.water_cut_pdf_output,
+            creator="fmgeo m8_plot_egg_inversion.py",
+            description=json.dumps(sources, sort_keys=True),
+        )
     plt.close(water_figure)
     print(
         json.dumps(

@@ -19,6 +19,7 @@ from fmgeo.artifacts import sha256_file
 from fmgeo.forward.egg import parse_egg_well_locations
 from fmgeo.metrics.egg import egg_well_connectivity
 from fmgeo.metrics.geology import experimental_variogram
+from fmgeo.plotting import save_vector_figure
 from fmgeo.resolution import average_pool_horizontal
 
 
@@ -104,12 +105,7 @@ def _plot_variograms(
             axis.grid(alpha=0.25)
     handles, labels = axes[0, 0].get_legend_handles_labels()
     figure.legend(handles, labels, loc="outside lower center", ncol=3)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(
-        path,
-        format="svg",
-        metadata={"Creator": "fmgeo m9_build_resolution_ablation.py", "Date": None},
-    )
+    save_vector_figure(figure, path, creator="fmgeo m9_build_resolution_ablation.py")
     plt.close(figure)
 
 
@@ -122,6 +118,7 @@ def main() -> int:
     parser.add_argument("--evaluation-report", action="append", type=Path, required=True)
     parser.add_argument("--table-output", type=Path, required=True)
     parser.add_argument("--figure-output", type=Path, required=True)
+    parser.add_argument("--pdf-output", type=Path)
     args = parser.parse_args()
 
     strategy = load_strategy_config(args.strategy_config)
@@ -257,6 +254,8 @@ def main() -> int:
     _write_csv(args.table_output, rows)
     plt.rcParams["svg.hashsalt"] = "fmgeo-resolution-ablation"
     _plot_variograms(args.figure_output, curves, reference_curves)
+    if args.pdf_output is not None:
+        _plot_variograms(args.pdf_output, curves, reference_curves)
     print(json.dumps({"rows": len(rows)}, sort_keys=True))
     return 0
 
