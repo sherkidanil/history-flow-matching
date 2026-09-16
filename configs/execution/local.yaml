@@ -1,0 +1,7 @@
+profile: local
+workers: 4
+device: auto
+min_free_disk_gb: 20
+work_dir: ../../scratch/local
+flow_command: flow
+

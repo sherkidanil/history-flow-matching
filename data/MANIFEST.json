@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "datasets": [
+    {
+      "name": "PUNQ-S3 official Coventry archive",
+      "source_url": "https://www.coventry.ac.uk/contentassets/21d815453cff43a686f9f84596c2fac6/punqs3.zip",
+      "source_page": "https://www.coventry.ac.uk/research/research-directories/current-projects/2019/petroleum-reservoir-engineering-simulation-models/",
+      "downloaded_at": "2026-09-15T08:47:37Z",
+      "license": "Not stated on the source page; archive is not redistributed",
+      "size_bytes": 76280,
+      "sha256": "7a89fa9e923d055c8526918ecae8284b4775aaed4f2b978111b44c78a2057e05"
+    },
+    {
+      "name": "The Egg Model - data files",
+      "source_url": "https://ndownloader.figshare.com/files/24061982",
+      "source_page": "https://doi.org/10.4121/UUID:916C86CD-3558-4672-829A-105C62985AB2",
+      "downloaded_at": "2026-09-15T08:47:37Z",
+      "license": "4TU General Terms of Use",
+      "license_url": "https://doi.org/10.4121/resource:terms_of_use",
+      "size_bytes": 49267594,
+      "md5": "50d270d9f769f2ca4bb1a8c10b49852e",
+      "sha256": "ec7cecd344a31f9c3244078bb0e895b1a99c81a99603d4a6082d4c326c775434"
+    }
+  ]
+}

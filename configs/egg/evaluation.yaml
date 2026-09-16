@@ -1,0 +1,5 @@
+# Shared post-training Egg metric settings, fixed before model sampling.
+high_permeability_quantile: 0.65  # ASSUMED facies threshold on training cells.
+max_sample_cells: 200000
+max_sample_fields: 128
+max_variogram_lag: 10

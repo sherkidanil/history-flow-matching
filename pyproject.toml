@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fmgeo"
+version = "0.1.0"
+description = "Flow-matching parameterizations for geological ensemble inversion"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "h5py>=3.10,<4",
+  "matplotlib>=3.8,<4",
+  "numpy>=1.26,<3",
+  "psutil>=6.0,<8",
+  "pydantic>=2.9,<3",
+  "pyyaml>=6.0,<7",
+  "resdata>=6.3.5,<7",
+  "scipy>=1.11,<2",
+  "torch>=2.2,<3",
+]
+
+
+[project.scripts]
+fmgeo = "fmgeo.cli:main"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.14",
+  "pytest>=8.0",
+  "ruff>=0.9",
+  "scipy-stubs>=1.17",
+  "types-psutil>=7.0",
+  "types-pyyaml>=6.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fmgeo"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "slow: statistically intensive acceptance tests",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+disallow_untyped_defs = true
+warn_unused_ignores = true

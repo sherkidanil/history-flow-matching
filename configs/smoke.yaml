@@ -1,0 +1,13 @@
+seed: 20260914
+scale: smoke
+execution:
+  profile: local
+  workers: 2
+  device: auto
+  min_free_disk_gb: 20
+  work_dir: ../scratch/smoke
+  flow_command: flow
+esmda:
+  ensemble_size: 16
+  inflations: [4.0, 4.0, 4.0, 4.0]
+

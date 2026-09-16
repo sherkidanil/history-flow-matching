@@ -1,0 +1,21 @@
+# Egg held-out-truth protocol. Values without an official benchmark prescription
+# are explicitly ASSUMED and must remain fixed across raw/PCA/FM comparisons.
+seed: 20260915
+truth_realization: 100  # Official realization held out from all training artifacts.
+ensemble_size: 100
+inflations: [4.0, 4.0, 4.0, 4.0]
+svd_energy: 0.999
+pca_variance_fraction: 0.95
+
+history_end_day: 1800.0  # ASSUMED: first half of the 3600-day schedule.
+forecast_end_day: 3600.0
+observation_interval_days: 90.0  # ASSUMED quarterly assimilation cadence.
+oil_rate_relative_sigma: 0.05  # ASSUMED independent observation error.
+water_rate_relative_sigma: 0.05  # ASSUMED independent observation error.
+rate_sigma_floor: 1.0  # ASSUMED surface-volume rate floor, m3/day.
+water_breakthrough_fraction: 0.05  # ASSUMED water-cut threshold.
+high_permeability_quantile: 0.65  # Shared facies threshold from evaluation config.
+
+workers: 16  # Measured cluster CPU/storage-safe concurrency.
+timeout_seconds: 300.0
+min_free_disk_gb: 20.0

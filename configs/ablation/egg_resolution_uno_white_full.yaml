@@ -1,0 +1,35 @@
+seed: 20260915
+strategies: [augmentation, mps, procedural]
+data:
+  field: logk
+  shape_zyx: [7, 60, 60]
+  training_samples: 5000
+  remove_layer_trend: true
+source:
+  kind: white
+  nu: 1.5
+  corr_len_cells_zyx: [1.0, 4.0, 8.0]
+  corr_len_scale: 1.0
+model:
+  kind: uno3d
+  in_channels: 1
+  hidden_channels: 16
+  time_dim: 64
+  modes_zyx: [4, 8, 8]
+  blocks: 3
+training:
+  batch_size: 16
+  epochs: 16
+  learning_rate: 0.0002
+  weight_decay: 0.00001
+  gradient_clip_norm: 1.0
+  ema_decay: 0.999
+  checkpoint_policy: ema_snapshots_and_latest_resume
+  evaluation_epochs: [4, 8, 16]
+integration:
+  method: heun
+  steps: 50
+evaluation:
+  reference: official_heldout
+  sample_count: 1000
+  metrics: [marginal_ks, variogram_x, variogram_y, spanning_fraction, bimodality]

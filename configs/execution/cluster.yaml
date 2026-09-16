@@ -1,0 +1,7 @@
+profile: cluster
+workers: 16
+device: auto
+min_free_disk_gb: 20
+work_dir: ../../scratch/cluster
+flow_command: flow
+
