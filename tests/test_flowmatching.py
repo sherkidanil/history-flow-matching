@@ -11,6 +11,7 @@ from fmgeo.param.flowmatching.model_unet3d import (
     UNet3D,
 )
 from fmgeo.param.flowmatching.model_uno3d import UNO3D
+from fmgeo.param.flowmatching.models import build_velocity_model
 from fmgeo.param.flowmatching.sample import FlowTransform, integrate_ode
 from fmgeo.param.flowmatching.train import (
     LayerTrendNormalizer,
@@ -94,6 +95,34 @@ def test_time_embedding_and_models_preserve_punq_shape() -> None:
 
     assert unet(x, time).shape == x.shape
     assert uno(x, time).shape == x.shape
+
+
+def test_velocity_model_factory_builds_resolution_flexible_unet_and_uno() -> None:
+    unet = build_velocity_model(
+        {
+            "kind": "unet3d",
+            "in_channels": 1,
+            "base_channels": 4,
+            "time_dim": 16,
+            "coarse_attention_only": True,
+        }
+    )
+    uno = build_velocity_model(
+        {
+            "kind": "uno3d",
+            "in_channels": 1,
+            "hidden_channels": 4,
+            "time_dim": 16,
+            "modes_zyx": (3, 4, 4),
+            "blocks": 2,
+        }
+    )
+    time = torch.tensor([0.5])
+
+    for shape in ((7, 30, 30), (7, 60, 60)):
+        values = torch.randn(1, 1, *shape)
+        assert unet(values, time).shape == values.shape
+        assert uno(values, time).shape == values.shape
 
 
 def test_unet_attention_is_restricted_to_coarsest_resolution() -> None:

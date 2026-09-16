@@ -23,9 +23,10 @@ from fmgeo.artifacts import (
 )
 from fmgeo.config import StrictModel
 from fmgeo.metrics.egg import egg_distribution_metrics
-from fmgeo.param.flowmatching.model_unet3d import UNet3D
+from fmgeo.param.flowmatching.models import build_velocity_model
 from fmgeo.param.flowmatching.sample import FlowTransform
 from fmgeo.param.flowmatching.train import LayerTrendNormalizer, make_source_sampler
+from fmgeo.resolution import average_pool_horizontal, scale_correlation_lengths
 from fmgeo.runtime import select_device
 
 
@@ -71,6 +72,34 @@ def _checkpoint_epoch(
     return configured_epochs
 
 
+def _match_reference_resolution(
+    fields: np.ndarray,
+    *,
+    full_active: np.ndarray,
+    target_active: np.ndarray,
+) -> np.ndarray:
+    if fields.shape[1:] == target_active.shape:
+        if full_active.shape != target_active.shape or not np.array_equal(
+            full_active, target_active
+        ):
+            raise ValueError("full-resolution active masks do not match")
+        return fields
+    if fields.shape[1] != target_active.shape[0]:
+        raise ValueError("target resolution must preserve the Egg layers")
+    ratios = (
+        fields.shape[-2] / target_active.shape[-2],
+        fields.shape[-1] / target_active.shape[-1],
+    )
+    if ratios[0] != ratios[1] or not ratios[0].is_integer():
+        raise ValueError("target resolution must be an integer isotropic horizontal pooling")
+    pooled, pooled_active = average_pool_horizontal(
+        fields, active_mask=full_active, factor=int(ratios[0])
+    )
+    if not np.array_equal(pooled_active, target_active):
+        raise ValueError("pooled official active mask does not match the target artifact")
+    return pooled
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
@@ -78,6 +107,7 @@ def main() -> int:
     parser.add_argument("--metric-config", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--training-data", type=Path, required=True)
+    parser.add_argument("--target-active-source", type=Path)
     parser.add_argument("--realizations-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -102,14 +132,6 @@ def main() -> int:
     strategy = strategy_config.strategy
     training_config_hash = canonical_config_hash(config)
     metric_config_hash = canonical_config_hash(metric_config)
-    sample_config_hash = canonical_config_hash(
-        {
-            "training": config,
-            "metrics": metric_config,
-            "integration_steps": integration_steps,
-            "sample_count": sample_count,
-        }
-    )
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     if checkpoint["strategy"] != strategy or checkpoint["config_hash"] != training_config_hash:
         raise ValueError("checkpoint strategy or configuration hash does not match")
@@ -122,11 +144,7 @@ def main() -> int:
         mps_available=bool(torch.backends.mps.is_available()),
     )
     device = torch.device(selected_device)
-    model = UNet3D(
-        in_channels=config.model.in_channels,
-        base_channels=config.model.base_channels,
-        time_dim=config.model.time_dim,
-    ).to(device)
+    model = build_velocity_model(config.model.model_dump(mode="python")).to(device)
     model.load_state_dict(checkpoint["model"])
     model.eval()
     normalizer = LayerTrendNormalizer(
@@ -135,19 +153,46 @@ def main() -> int:
 
     ensemble = load_egg_ensemble(args.realizations_dir)
     heldout = np.asarray([index - 1 for index in strategy_config.heldout_indices])
-    reference = ensemble[heldout]
-    training = np.delete(ensemble, heldout, axis=0)
-    with h5py.File(args.training_data) as handle:
+    target_active_source = args.target_active_source or args.training_data
+    with h5py.File(target_active_source) as handle:
         active = np.asarray(handle["active_mask"], dtype=bool)
-    if active.shape != EGG_SHAPE:
-        raise ValueError("checkpoint data active mask does not match Egg")
+    with h5py.File(args.training_data) as handle:
+        training_active = np.asarray(handle["active_mask"], dtype=bool)
+    if training_active.shape != config.data.shape_zyx:
+        raise ValueError("training-data active mask does not match the configuration")
+    if active.shape not in (config.data.shape_zyx, EGG_SHAPE):
+        raise ValueError("evaluation must use the training or official full Egg resolution")
+    full_active = np.any(ensemble != 0.0, axis=0)
+    reference = _match_reference_resolution(
+        ensemble[heldout], full_active=full_active, target_active=active
+    )
+    training = _match_reference_resolution(
+        np.delete(ensemble, heldout, axis=0),
+        full_active=full_active,
+        target_active=active,
+    )
+    source_corr_len = scale_correlation_lengths(
+        config.source.corr_len_cells_zyx,
+        reference_shape=config.data.shape_zyx,
+        target_shape=active.shape,
+    )
+    sample_config_hash = canonical_config_hash(
+        {
+            "training": config,
+            "metrics": metric_config,
+            "integration_steps": integration_steps,
+            "sample_count": sample_count,
+            "evaluation_shape": active.shape,
+            "source_corr_len_cells_zyx": source_corr_len,
+        }
+    )
     threshold = float(np.quantile(training[:, active], metric_config.high_permeability_quantile))
 
     mask = torch.from_numpy(active)[None, None].to(device)
     source_sampler = make_source_sampler(
         config.source.kind,
-        shape=config.data.shape_zyx,
-        corr_len=config.source.corr_len_cells_zyx,
+        shape=active.shape,
+        corr_len=source_corr_len,
         nu=config.source.nu,
         corr_len_scale=config.source.corr_len_scale,
     )
@@ -196,6 +241,8 @@ def main() -> int:
         handle.create_dataset("active_mask", data=active, compression="gzip")
         handle.attrs["strategy"] = strategy
         handle.attrs["config_hash"] = sample_config_hash
+        handle.attrs["training_shape_zyx"] = config.data.shape_zyx
+        handle.attrs["evaluation_shape_zyx"] = active.shape
 
     git_commit = (
         args.git_commit
@@ -224,6 +271,9 @@ def main() -> int:
         ),
         "integration_steps": integration_steps,
         "sample_count": sample_count,
+        "training_shape_zyx": list(config.data.shape_zyx),
+        "evaluation_shape_zyx": list(active.shape),
+        "source_corr_len_cells_zyx": list(source_corr_len),
         "high_permeability_threshold_logk": threshold,
         "roundtrip_relative_error": roundtrip_relative_error,
         "metrics": metrics,

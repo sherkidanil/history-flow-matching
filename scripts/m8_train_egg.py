@@ -7,7 +7,7 @@ import json
 import platform
 import subprocess
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 import h5py  # type: ignore[import-untyped]
 import numpy as np
@@ -22,7 +22,7 @@ from fmgeo.artifacts import (
     update_manifest_atomic,
 )
 from fmgeo.config import StrictModel
-from fmgeo.param.flowmatching.model_unet3d import UNet3D
+from fmgeo.param.flowmatching.models import build_velocity_model
 from fmgeo.param.flowmatching.train import (
     ExponentialMovingAverage,
     LayerTrendNormalizer,
@@ -48,12 +48,24 @@ class SourceConfig(StrictModel):
     corr_len_scale: float = Field(default=1.0, gt=0)
 
 
-class ModelConfig(StrictModel):
+class UNetModelConfig(StrictModel):
     kind: Literal["unet3d"]
     in_channels: Literal[1]
     base_channels: int = Field(ge=1)
     time_dim: int = Field(ge=4)
     coarse_attention_only: Literal[True]
+
+
+class UNOModelConfig(StrictModel):
+    kind: Literal["uno3d"]
+    in_channels: Literal[1]
+    hidden_channels: int = Field(ge=1)
+    time_dim: int = Field(ge=4)
+    modes_zyx: tuple[int, int, int]
+    blocks: int = Field(ge=1)
+
+
+ModelConfig = Annotated[UNetModelConfig | UNOModelConfig, Field(discriminator="kind")]
 
 
 class TrainingConfig(StrictModel):
@@ -165,11 +177,7 @@ def main() -> int:
     normalizer = LayerTrendNormalizer.fit(targets, active_mask)
     normalized = normalizer.transform(targets)
     normalized = torch.where(active_mask, normalized, torch.zeros_like(normalized))
-    model = UNet3D(
-        in_channels=config.model.in_channels,
-        base_channels=config.model.base_channels,
-        time_dim=config.model.time_dim,
-    ).to(device)
+    model = build_velocity_model(config.model.model_dump(mode="python")).to(device)
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=config.training.learning_rate,

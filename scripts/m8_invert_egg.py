@@ -28,7 +28,7 @@ from fmgeo.inverse.egg import (
     run_egg_esmda,
 )
 from fmgeo.metrics.uq import coverage, forecast_quantiles
-from fmgeo.param.flowmatching.model_unet3d import UNet3D
+from fmgeo.param.flowmatching.models import build_velocity_model
 from fmgeo.param.flowmatching.sample import FlowTransform
 from fmgeo.param.flowmatching.train import LayerTrendNormalizer
 from fmgeo.param.pca import PCAParameterization
@@ -78,11 +78,7 @@ def _flow_adapter(
         mps_available=bool(torch.backends.mps.is_available()),
     )
     device = torch.device(selected)
-    model = UNet3D(
-        in_channels=config.model.in_channels,
-        base_channels=config.model.base_channels,
-        time_dim=config.model.time_dim,
-    ).to(device)
+    model = build_velocity_model(config.model.model_dump(mode="python")).to(device)
     model.load_state_dict(checkpoint["model"])
     model.eval()
     mask = torch.from_numpy(active)[None, None].to(device)

@@ -72,6 +72,44 @@ def test_repository_source_ablation_configs_vary_only_source_measure() -> None:
     assert configs["matern_misspec"].source.corr_len_scale == 3.0
 
 
+def test_resolution_configs_keep_architecture_budgets_and_physical_lengths() -> None:
+    repository = Path(__file__).parents[1]
+    sys.path.insert(0, str(repository / "scripts"))
+    try:
+        module = importlib.import_module("m8_train_egg")
+        configs = {
+            (architecture, source, resolution): module.load_fm_config(
+                repository
+                / f"configs/ablation/egg_resolution_{architecture}_{source}_{resolution}.yaml"
+            )
+            for architecture in ("unet", "uno")
+            for source in ("white", "matern")
+            for resolution in (("coarse",) if architecture == "unet" else ("coarse", "full"))
+        }
+    finally:
+        sys.path.pop(0)
+
+    for architecture in ("unet", "uno"):
+        white = configs[(architecture, "white", "coarse")]
+        matern = configs[(architecture, "matern", "coarse")]
+        assert white.training == matern.training
+        assert white.model == matern.model
+        assert white.data == matern.data
+        assert white.source.kind == "white"
+        assert matern.source.kind == "matern"
+        assert matern.source.corr_len_cells_zyx == (1.0, 2.0, 4.0)
+    for source in ("white", "matern"):
+        coarse = configs[("uno", source, "coarse")]
+        full = configs[("uno", source, "full")]
+        assert coarse.training == full.training
+        assert coarse.model == full.model
+        assert coarse.data.shape_zyx == (7, 30, 30)
+        assert full.data.shape_zyx == (7, 60, 60)
+        assert tuple(2 * value for value in coarse.source.corr_len_cells_zyx[1:]) == (
+            full.source.corr_len_cells_zyx[1:]
+        )
+
+
 def test_evaluation_budget_overrides_are_explicit_and_positive() -> None:
     repository = Path(__file__).parents[1]
     sys.path.insert(0, str(repository / "scripts"))
@@ -96,6 +134,26 @@ def test_evaluation_budget_overrides_are_explicit_and_positive() -> None:
         )
     assert evaluation._checkpoint_epoch(Path("ema-epoch-0004.pt"), {}, 16) == 4
     assert evaluation._checkpoint_epoch(Path("ema.pt"), {}, 16) == 16
+
+
+def test_evaluation_reference_is_pooled_to_declared_target_mask() -> None:
+    repository = Path(__file__).parents[1]
+    sys.path.insert(0, str(repository / "scripts"))
+    try:
+        evaluation = importlib.import_module("m8_evaluate_egg")
+    finally:
+        sys.path.pop(0)
+    fields = np.asarray(
+        [[[[1.0, 3.0, 10.0, 14.0], [5.0, 7.0, 18.0, 22.0]]]], dtype=np.float32
+    )
+    full_active = np.asarray([[[True, True, True, False], [True, True, False, False]]])
+    target_active = np.asarray([[[True, True]]])
+
+    pooled = evaluation._match_reference_resolution(
+        fields, full_active=full_active, target_active=target_active
+    )
+
+    np.testing.assert_allclose(pooled, [[[[4.0, 10.0]]]])
 
 
 def test_egg_training_script_enforces_budget_and_writes_checkpoint(tmp_path: Path) -> None:

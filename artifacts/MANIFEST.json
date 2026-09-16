@@ -421,6 +421,21 @@
       "size_bytes": 201390899
     },
     {
+      "config_hash": "4bfcd4eb09c0bba51b01ad2d426a9aec76f6ac54daeb9daedc93dafa328c200f",
+      "created_at": "2026-09-16T06:40:32.164668Z",
+      "dtype": "float32",
+      "git_commit": "b58f200fe6b49b2ad2c5482047133098b3491647",
+      "path": "artifacts/egg_augmentation_5000_30x30.h5",
+      "sha256": "1da6dc38997fb1a3ccaf79b9823b56b5a86175d0b2342f02cfb4c376fe1a6497",
+      "shape": [
+        5000,
+        7,
+        30,
+        30
+      ],
+      "size_bytes": 82913041
+    },
+    {
       "config_hash": "539d6917bde89de52b2dc01b555ae7573d2487c25c5fc85c247089be1ba87723",
       "created_at": "2026-09-15T10:32:42.003964Z",
       "dtype": "float32",

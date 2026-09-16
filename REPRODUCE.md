@@ -293,3 +293,45 @@ uv run python scripts/m9_build_source_inversions.py \
   --table-output results/tables/egg_source_inversions.csv \
   --figure-output results/figures/egg_source_inversions.svg
 ```
+
+## Cross-resolution transfer
+
+Build the deterministic active-aware 7x30x30 training artifact:
+
+```bash
+uv run python scripts/m9_pool_egg.py \
+  --input artifacts/egg_augmentation_5000.h5 \
+  --factor 2 --batch-size 64 \
+  --output artifacts/egg_augmentation_5000_30x30.h5 \
+  --manifest artifacts/MANIFEST.json \
+  --report results/raw/egg_augmentation_5000_30x30.json
+```
+
+Train the matched coarse U-Net/UNO source pairs and the direct full-resolution
+UNO references. The Matérn correlation lengths are `[1,2,4]` coarse-grid cells
+and `[1,4,8]` full-grid cells, representing the same physical lengths:
+
+```bash
+for ARCHITECTURE in unet uno; do
+  for SOURCE in white matern; do
+    uv run python scripts/m8_train_egg.py \
+      --config "configs/ablation/egg_resolution_${ARCHITECTURE}_${SOURCE}_coarse.yaml" \
+      --strategy augmentation \
+      --data artifacts/egg_augmentation_5000_30x30.h5 \
+      --output-dir "artifacts/egg_models/resolution_${ARCHITECTURE}_${SOURCE}_coarse" \
+      --manifest "artifacts/resolution_${ARCHITECTURE}_${SOURCE}_coarse_manifest.json" \
+      --report "results/raw/egg_resolution_${ARCHITECTURE}_${SOURCE}_coarse_training.json" \
+      --device auto
+  done
+done
+for SOURCE in white matern; do
+  uv run python scripts/m8_train_egg.py \
+    --config "configs/ablation/egg_resolution_uno_${SOURCE}_full.yaml" \
+    --strategy augmentation \
+    --data artifacts/egg_augmentation_5000.h5 \
+    --output-dir "artifacts/egg_models/resolution_uno_${SOURCE}_full" \
+    --manifest "artifacts/resolution_uno_${SOURCE}_full_manifest.json" \
+    --report "results/raw/egg_resolution_uno_${SOURCE}_full_training.json" \
+    --device auto
+done
+```
