@@ -201,7 +201,7 @@ def main() -> int:
             save_ema_snapshot(
                 args.output_dir,
                 epoch=epoch,
-                state={**common, "model": ema.state_dict()},
+                state={**common, "model": ema.state_dict(), "completed_epochs": epoch},
             )
 
     losses, ema = train_flow_matching(
@@ -220,7 +220,11 @@ def main() -> int:
 
     save_checkpoint_policy(
         args.output_dir,
-        ema_state={**common, "model": ema.state_dict()},
+        ema_state={
+            **common,
+            "model": ema.state_dict(),
+            "completed_epochs": config.training.epochs,
+        },
         resume_state={
             **common,
             "model": model.state_dict(),

@@ -12,7 +12,7 @@ import numpy as np
 import torch
 import yaml
 from m8_egg_case import EGG_SHAPE, load_egg_ensemble, load_strategy_config
-from m8_train_egg import load_fm_config
+from m8_train_egg import EggFMConfig, load_fm_config
 from pydantic import Field
 
 from fmgeo.artifacts import (
@@ -44,6 +44,33 @@ def load_metric_config(path: Path) -> EggMetricConfig:
     return EggMetricConfig.model_validate(payload)
 
 
+def _resolve_evaluation_budget(
+    config: EggFMConfig,
+    *,
+    integration_steps: int | None,
+    sample_count: int | None,
+) -> tuple[int, int]:
+    steps = config.integration.steps if integration_steps is None else integration_steps
+    count = config.evaluation.sample_count if sample_count is None else sample_count
+    if steps <= 0 or count <= 0:
+        raise ValueError("evaluation integration steps and sample count must be positive")
+    return steps, count
+
+
+def _checkpoint_epoch(
+    path: Path, checkpoint: dict[str, object], configured_epochs: int
+) -> int:
+    stored = checkpoint.get("completed_epochs")
+    if isinstance(stored, int) and not isinstance(stored, bool):
+        return stored
+    if stored is not None:
+        raise ValueError("checkpoint completed_epochs must be an integer")
+    prefix = "ema-epoch-"
+    if path.stem.startswith(prefix):
+        return int(path.stem.removeprefix(prefix))
+    return configured_epochs
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
@@ -56,6 +83,8 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--integration-steps", type=int)
+    parser.add_argument("--sample-count", type=int)
     parser.add_argument("--device", choices=("auto", "cpu", "mps", "cuda"), default="auto")
     parser.add_argument("--git-commit")
     args = parser.parse_args()
@@ -63,12 +92,24 @@ def main() -> int:
         raise ValueError("batch size must be positive")
 
     config = load_fm_config(args.config)
+    integration_steps, sample_count = _resolve_evaluation_budget(
+        config,
+        integration_steps=args.integration_steps,
+        sample_count=args.sample_count,
+    )
     metric_config = load_metric_config(args.metric_config)
     strategy_config = load_strategy_config(args.strategy_config)
     strategy = strategy_config.strategy
     training_config_hash = canonical_config_hash(config)
     metric_config_hash = canonical_config_hash(metric_config)
-    sample_config_hash = canonical_config_hash({"training": config, "metrics": metric_config})
+    sample_config_hash = canonical_config_hash(
+        {
+            "training": config,
+            "metrics": metric_config,
+            "integration_steps": integration_steps,
+            "sample_count": sample_count,
+        }
+    )
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     if checkpoint["strategy"] != strategy or checkpoint["config_hash"] != training_config_hash:
         raise ValueError("checkpoint strategy or configuration hash does not match")
@@ -112,14 +153,14 @@ def main() -> int:
     )
     transform = FlowTransform(
         model,
-        steps=config.integration.steps,
+        steps=integration_steps,
         method=config.integration.method,
         mask=mask,
     )
     generator = torch.Generator(device=device).manual_seed(config.seed + 10_000)
     generated_batches: list[np.ndarray] = []
     roundtrip_relative_error: float | None = None
-    remaining = config.evaluation.sample_count
+    remaining = sample_count
     while remaining:
         batch_count = min(args.batch_size, remaining)
         source = source_sampler(batch_count, generator, device, torch.float32)
@@ -135,8 +176,8 @@ def main() -> int:
         physical = torch.where(mask.cpu(), physical, torch.zeros_like(physical))
         generated_batches.append(physical[:, 0].numpy())
         remaining -= batch_count
-        completed = config.evaluation.sample_count - remaining
-        print(f"generated {completed}/{config.evaluation.sample_count}")
+        completed = sample_count - remaining
+        print(f"generated {completed}/{sample_count}")
     generated = np.concatenate(generated_batches).astype(np.float32, copy=False)
 
     metrics = egg_distribution_metrics(
@@ -178,6 +219,11 @@ def main() -> int:
         "training_config_hash": training_config_hash,
         "metric_config_hash": metric_config_hash,
         "sample_config_hash": sample_config_hash,
+        "checkpoint_epoch": _checkpoint_epoch(
+            args.checkpoint, checkpoint, config.training.epochs
+        ),
+        "integration_steps": integration_steps,
+        "sample_count": sample_count,
         "high_permeability_threshold_logk": threshold,
         "roundtrip_relative_error": roundtrip_relative_error,
         "metrics": metrics,

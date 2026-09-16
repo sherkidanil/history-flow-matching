@@ -8,6 +8,8 @@ from pathlib import Path
 
 import h5py  # type: ignore[import-untyped]
 import numpy as np
+import pytest
+import torch
 import yaml
 
 
@@ -68,6 +70,32 @@ def test_repository_source_ablation_configs_vary_only_source_measure() -> None:
     assert configs["white"].source.kind == "white"
     assert configs["matern"].source.corr_len_scale == 1.0
     assert configs["matern_misspec"].source.corr_len_scale == 3.0
+
+
+def test_evaluation_budget_overrides_are_explicit_and_positive() -> None:
+    repository = Path(__file__).parents[1]
+    sys.path.insert(0, str(repository / "scripts"))
+    try:
+        training = importlib.import_module("m8_train_egg")
+        evaluation = importlib.import_module("m8_evaluate_egg")
+        config = training.load_fm_config(
+            repository / "configs/ablation/egg_source_white.yaml"
+        )
+    finally:
+        sys.path.pop(0)
+
+    assert evaluation._resolve_evaluation_budget(
+        config, integration_steps=10, sample_count=128
+    ) == (10, 128)
+    assert evaluation._resolve_evaluation_budget(
+        config, integration_steps=None, sample_count=None
+    ) == (50, 1000)
+    with pytest.raises(ValueError, match="positive"):
+        evaluation._resolve_evaluation_budget(
+            config, integration_steps=0, sample_count=128
+        )
+    assert evaluation._checkpoint_epoch(Path("ema-epoch-0004.pt"), {}, 16) == 4
+    assert evaluation._checkpoint_epoch(Path("ema.pt"), {}, 16) == 16
 
 
 def test_egg_training_script_enforces_budget_and_writes_checkpoint(tmp_path: Path) -> None:
@@ -160,6 +188,7 @@ def test_egg_training_script_enforces_budget_and_writes_checkpoint(tmp_path: Pat
         "ema-epoch-0001.pt",
         "resume.pt",
     }
+    assert torch.load(output / "ema-epoch-0001.pt", weights_only=True)["completed_epochs"] == 1
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert payload["optimization_steps"] == 1
     assert payload["evaluation_epochs"] == [1]
