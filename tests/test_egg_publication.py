@@ -10,6 +10,7 @@ sys.path.insert(0, str(repository / "scripts"))
 
 from m8_build_egg_inversion_tables import _cluster_row  # noqa: E402
 from m8_plot_egg_inversion import _water_cut_quantiles  # noqa: E402
+from m9_build_source_ablation import _loss_at_epoch  # noqa: E402
 
 
 def test_cluster_row_contains_measured_summary_and_provenance() -> None:
@@ -44,3 +45,10 @@ def test_water_cut_quantiles_preserve_times_and_member_axis() -> None:
 
     np.testing.assert_array_equal(times, [0.0, 30.0])
     np.testing.assert_allclose(quantiles[:, 1], [0.26, 0.5, 0.74])
+
+
+def test_ablation_epoch_loss_uses_complete_batches_per_epoch() -> None:
+    history = [float(value) for value in range(12)]
+
+    assert _loss_at_epoch(history, epoch=1, training_samples=5, batch_size=2) == 2.0
+    assert _loss_at_epoch(history, epoch=3, training_samples=5, batch_size=2) == 8.0
