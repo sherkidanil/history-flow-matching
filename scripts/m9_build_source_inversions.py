@@ -125,7 +125,11 @@ def _plot(path: Path, rows: list[dict[str, object]]) -> None:
         axis.set_xticks(x, labels, rotation=15)
         axis.grid(axis="y", alpha=0.25)
     path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(path, format="svg")
+    figure.savefig(
+        path,
+        format="svg",
+        metadata={"Creator": "fmgeo m9_build_source_inversions.py", "Date": None},
+    )
     plt.close(figure)
 
 

@@ -93,7 +93,9 @@ def test_source_inversion_plot_renders_three_colored_intervals(tmp_path: Path) -
 
     _plot(output, rows)
 
-    assert output.read_text(encoding="utf-8").startswith("<?xml")
+    rendered = output.read_text(encoding="utf-8")
+    assert rendered.startswith("<?xml")
+    assert "<dc:date>" not in rendered
 
 
 def test_resolution_publication_uses_physical_lags_and_scaled_wells() -> None:

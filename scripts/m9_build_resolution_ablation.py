@@ -105,7 +105,11 @@ def _plot_variograms(
     handles, labels = axes[0, 0].get_legend_handles_labels()
     figure.legend(handles, labels, loc="outside lower center", ncol=3)
     path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(path, format="svg")
+    figure.savefig(
+        path,
+        format="svg",
+        metadata={"Creator": "fmgeo m9_build_resolution_ablation.py", "Date": None},
+    )
     plt.close(figure)
 
 
