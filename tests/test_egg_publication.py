@@ -11,6 +11,7 @@ sys.path.insert(0, str(repository / "scripts"))
 from m8_build_egg_inversion_tables import _cluster_row  # noqa: E402
 from m8_plot_egg_inversion import _water_cut_quantiles  # noqa: E402
 from m9_build_source_ablation import _loss_at_epoch  # noqa: E402
+from m9_build_source_inversions import _comparison_metrics, _plot  # noqa: E402
 
 
 def test_cluster_row_contains_measured_summary_and_provenance() -> None:
@@ -52,3 +53,43 @@ def test_ablation_epoch_loss_uses_complete_batches_per_epoch() -> None:
 
     assert _loss_at_epoch(history, epoch=1, training_samples=5, batch_size=2) == 2.0
     assert _loss_at_epoch(history, epoch=3, training_samples=5, batch_size=2) == 8.0
+
+
+def test_source_inversion_metrics_are_exact_for_truth_ensemble() -> None:
+    fields = np.asarray(
+        [[[[0.0, 2.0, 2.0], [0.0, 2.0, 2.0]], [[0.0, 2.0, 2.0], [0.0, 2.0, 2.0]]]]
+    )
+    metrics = _comparison_metrics(
+        fields,
+        truth=fields,
+        active=np.ones((2, 2, 3), dtype=bool),
+        threshold=1.0,
+        wells={"INJECT1": (0, 1), "PROD1": (1, 2)},
+    )
+
+    assert metrics["connectivity_mae_to_truth"] == 0.0
+    assert metrics["bimodality_coefficient"] == metrics["truth_bimodality_coefficient"]
+    assert metrics["largest_component_fraction_p50"] == 1.0
+
+
+def test_source_inversion_plot_renders_three_colored_intervals(tmp_path: Path) -> None:
+    rows = [
+        {
+            "variant": variant,
+            "fopt_p10": 1.0 + index,
+            "fopt_p50": 2.0 + index,
+            "fopt_p90": 3.0 + index,
+            "truth_fopt": 2.5,
+            "mean_normalized_data_misfit": 1.0,
+            "connectivity_mae_to_truth": 0.1,
+            "bimodality_abs_error": 0.2,
+            "largest_component_fraction_abs_error": 0.3,
+            "component_size_p50_abs_error": 4.0,
+        }
+        for index, variant in enumerate(("white", "matern", "matern_misspec"))
+    ]
+    output = tmp_path / "comparison.svg"
+
+    _plot(output, rows)
+
+    assert output.read_text(encoding="utf-8").startswith("<?xml")

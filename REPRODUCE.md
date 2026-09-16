@@ -249,3 +249,47 @@ uv run python scripts/m9_build_source_ablation.py \
   --table-output results/tables/egg_source_ablation.csv \
   --figure-output results/figures/egg_source_ablation.svg
 ```
+
+Run the three final source-inversion comparisons with the same held-out truth,
+initial physical ensemble, ES-MDA schedule, and simulator budget:
+
+```bash
+for VARIANT in white matern matern_misspec; do
+  uv run python scripts/m8_invert_egg.py \
+    --method fm --parameterization-label "$VARIANT" --strategy augmentation \
+    --config configs/egg/inversion.yaml \
+    --fm-config "configs/ablation/egg_source_${VARIANT}.yaml" \
+    --checkpoint "artifacts/egg_models/ablation_${VARIANT}/ema-epoch-0016.pt" \
+    --training-data artifacts/egg_augmentation_5000.h5 \
+    --prior-fields artifacts/egg_fm_samples_augmentation_1000.h5 \
+    --truth-case scratch/egg_truth_perm100/EGG \
+    --template-dir scratch/egg_truth_perm100 \
+    --flow-command scripts/flow_docker.sh \
+    --simulator-id 'OPM Flow 2026.04 / openporousmedia/opmreleases:latest' \
+    --work-root "/path/on/docker/filesystem/fmgeo/egg_work_ablation_${VARIANT}" \
+    --cache-dir scratch/egg_cache \
+    --output "artifacts/egg_inversion_ablation_${VARIANT}_fm.h5" \
+    --manifest "artifacts/ablation_${VARIANT}_inversion_manifest.json" \
+    --report "results/raw/egg_inversion_ablation_${VARIANT}_fm.json" \
+    --device auto
+done
+```
+
+Build the provenance-complete source-inversion comparison:
+
+```bash
+uv run python scripts/m9_build_source_inversions.py \
+  --config configs/egg/inversion.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_fm_samples_augmentation_1000.h5 \
+  --evaluation-report results/raw/egg_evaluation_augmentation.json \
+  --inversion white=artifacts/egg_inversion_ablation_white_fm.h5 \
+  --inversion matern=artifacts/egg_inversion_ablation_matern_fm.h5 \
+  --inversion matern_misspec=artifacts/egg_inversion_ablation_matern_misspec_fm.h5 \
+  --inversion-report white=results/raw/egg_inversion_ablation_white_fm.json \
+  --inversion-report matern=results/raw/egg_inversion_ablation_matern_fm.json \
+  --inversion-report matern_misspec=results/raw/egg_inversion_ablation_matern_misspec_fm.json \
+  --table-output results/tables/egg_source_inversions.csv \
+  --figure-output results/figures/egg_source_inversions.svg
+```
