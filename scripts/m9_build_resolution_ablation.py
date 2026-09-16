@@ -114,6 +114,7 @@ def main() -> int:
     parser.add_argument("--strategy-config", type=Path, required=True)
     parser.add_argument("--deck", type=Path, required=True)
     parser.add_argument("--realizations-dir", type=Path, required=True)
+    parser.add_argument("--full-active-source", type=Path, required=True)
     parser.add_argument("--evaluation-report", action="append", type=Path, required=True)
     parser.add_argument("--table-output", type=Path, required=True)
     parser.add_argument("--figure-output", type=Path, required=True)
@@ -123,7 +124,10 @@ def main() -> int:
     ensemble = load_egg_ensemble(args.realizations_dir)
     heldout = np.asarray([index - 1 for index in strategy.heldout_indices])
     reference_full = ensemble[heldout]
-    full_active = np.any(ensemble != 0.0, axis=0)
+    with h5py.File(args.full_active_source) as handle:
+        full_active = np.asarray(handle["active_mask"], dtype=bool)
+    if full_active.shape != EGG_SHAPE:
+        raise ValueError("full-active-source must contain the official Egg grid mask")
     wells_full = parse_egg_well_locations(args.deck.read_text(encoding="utf-8", errors="replace"))
     derived_git_commit = _git_commit()
     rows: list[dict[str, object]] = []
@@ -202,7 +206,7 @@ def main() -> int:
                     lags,
                     experimental_variogram(
                         generated[:128], axis=axis, max_lag=lag_count, active_mask=active
-                    ),
+                    )[1:],
                 )
 
     expected = {
@@ -242,7 +246,7 @@ def main() -> int:
                 axis=axis,
                 max_lag=reference_lag_count,
                 active_mask=full_active,
-            ),
+            )[1:],
         )
         for direction, axis in (("x", 2), ("y", 1))
     }

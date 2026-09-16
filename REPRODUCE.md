@@ -335,3 +335,74 @@ for SOURCE in white matern; do
     --device auto
 done
 ```
+
+Evaluate each coarse checkpoint on its native grid and after transfer to the
+full grid, then evaluate the direct full-grid checkpoint. All full-grid metrics
+use 20 fine-cell lags; coarse metrics use 10 two-fine-cell lags, so both cover
+the same physical distance:
+
+```bash
+for ARCHITECTURE in unet uno; do
+  for SOURCE in white matern; do
+    COARSE_CONFIG="configs/ablation/egg_resolution_${ARCHITECTURE}_${SOURCE}_coarse.yaml"
+    COARSE_CHECKPOINT="artifacts/egg_models/resolution_${ARCHITECTURE}_${SOURCE}_coarse/ema-epoch-0016.pt"
+    MANIFEST="artifacts/resolution_${ARCHITECTURE}_${SOURCE}_evaluation_manifest.json"
+    for EVALUATION in coarse full; do
+      TARGET_ARGS=()
+      MAX_LAG=10
+      if [ "$EVALUATION" = full ]; then
+        TARGET_ARGS=(--target-active-source artifacts/egg_augmentation_5000.h5)
+        MAX_LAG=20
+      fi
+      uv run python scripts/m8_evaluate_egg.py \
+        --config "$COARSE_CONFIG" --strategy-config configs/egg/augmentation.yaml \
+        --metric-config configs/egg/evaluation.yaml --checkpoint "$COARSE_CHECKPOINT" \
+        --training-data artifacts/egg_augmentation_5000_30x30.h5 \
+        --full-active-source artifacts/egg_augmentation_5000.h5 \
+        --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+        "${TARGET_ARGS[@]}" --integration-steps 50 --sample-count 128 \
+        --max-variogram-lag "$MAX_LAG" \
+        --output "artifacts/egg_resolution_samples_${ARCHITECTURE}_${SOURCE}_train-coarse_eval-${EVALUATION}.h5" \
+        --manifest "$MANIFEST" \
+        --report "results/raw/egg_resolution_${ARCHITECTURE}_${SOURCE}_train-coarse_eval-${EVALUATION}.json" \
+        --device auto
+    done
+
+    if [ "$ARCHITECTURE" = unet ]; then
+      FULL_CONFIG="configs/ablation/egg_source_${SOURCE}.yaml"
+      FULL_CHECKPOINT="artifacts/egg_models/ablation_${SOURCE}/ema-epoch-0016.pt"
+    else
+      FULL_CONFIG="configs/ablation/egg_resolution_uno_${SOURCE}_full.yaml"
+      FULL_CHECKPOINT="artifacts/egg_models/resolution_uno_${SOURCE}_full/ema-epoch-0016.pt"
+    fi
+    uv run python scripts/m8_evaluate_egg.py \
+      --config "$FULL_CONFIG" --strategy-config configs/egg/augmentation.yaml \
+      --metric-config configs/egg/evaluation.yaml --checkpoint "$FULL_CHECKPOINT" \
+      --training-data artifacts/egg_augmentation_5000.h5 \
+      --full-active-source artifacts/egg_augmentation_5000.h5 \
+      --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+      --integration-steps 50 --sample-count 128 --max-variogram-lag 20 \
+      --output "artifacts/egg_resolution_samples_${ARCHITECTURE}_${SOURCE}_train-full_eval-full.h5" \
+      --manifest "$MANIFEST" \
+      --report "results/raw/egg_resolution_${ARCHITECTURE}_${SOURCE}_train-full_eval-full.json" \
+      --device auto
+  done
+done
+```
+
+Build the required 12-row table and physical-lag variogram figure:
+
+```bash
+REPORT_ARGS=()
+for REPORT in results/raw/egg_resolution_*_train-*_eval-*.json; do
+  REPORT_ARGS+=(--evaluation-report "$REPORT")
+done
+uv run python scripts/m9_build_resolution_ablation.py \
+  --strategy-config configs/egg/augmentation.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --full-active-source artifacts/egg_augmentation_5000.h5 \
+  "${REPORT_ARGS[@]}" \
+  --table-output results/tables/ablation_resolution.csv \
+  --figure-output results/figures/ablation_resolution.svg
+```
