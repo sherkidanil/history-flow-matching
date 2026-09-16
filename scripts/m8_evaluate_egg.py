@@ -115,6 +115,7 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--integration-steps", type=int)
     parser.add_argument("--sample-count", type=int)
+    parser.add_argument("--max-variogram-lag", type=int)
     parser.add_argument("--device", choices=("auto", "cpu", "mps", "cuda"), default="auto")
     parser.add_argument("--git-commit")
     args = parser.parse_args()
@@ -128,6 +129,12 @@ def main() -> int:
         sample_count=args.sample_count,
     )
     metric_config = load_metric_config(args.metric_config)
+    if args.max_variogram_lag is not None:
+        if args.max_variogram_lag < 1:
+            raise ValueError("maximum variogram lag must be positive")
+        metric_config = metric_config.model_copy(
+            update={"max_variogram_lag": args.max_variogram_lag}
+        )
     strategy_config = load_strategy_config(args.strategy_config)
     strategy = strategy_config.strategy
     training_config_hash = canonical_config_hash(config)
@@ -262,6 +269,8 @@ def main() -> int:
     report = {
         "benchmark": "Egg",
         "strategy": strategy,
+        "model_kind": config.model.kind,
+        "source_kind": config.source.kind,
         "checkpoint": str(args.checkpoint),
         "training_config_hash": training_config_hash,
         "metric_config_hash": metric_config_hash,
@@ -274,6 +283,7 @@ def main() -> int:
         "training_shape_zyx": list(config.data.shape_zyx),
         "evaluation_shape_zyx": list(active.shape),
         "source_corr_len_cells_zyx": list(source_corr_len),
+        "max_variogram_lag": metric_config.max_variogram_lag,
         "high_permeability_threshold_logk": threshold,
         "roundtrip_relative_error": roundtrip_relative_error,
         "metrics": metrics,

@@ -10,6 +10,7 @@ sys.path.insert(0, str(repository / "scripts"))
 
 from m8_build_egg_inversion_tables import _cluster_row  # noqa: E402
 from m8_plot_egg_inversion import _water_cut_quantiles  # noqa: E402
+from m9_build_resolution_ablation import _physical_lags, _scaled_wells  # noqa: E402
 from m9_build_source_ablation import _loss_at_epoch  # noqa: E402
 from m9_build_source_inversions import _comparison_metrics, _plot  # noqa: E402
 
@@ -93,3 +94,11 @@ def test_source_inversion_plot_renders_three_colored_intervals(tmp_path: Path) -
     _plot(output, rows)
 
     assert output.read_text(encoding="utf-8").startswith("<?xml")
+
+
+def test_resolution_publication_uses_physical_lags_and_scaled_wells() -> None:
+    np.testing.assert_array_equal(_physical_lags(4, cell_size=2.0), [2.0, 4.0, 6.0, 8.0])
+    assert _scaled_wells({"INJECT1": (5, 9), "PROD1": (10, 12)}, factor=2) == {
+        "INJECT1": (2, 4),
+        "PROD1": (5, 6),
+    }
