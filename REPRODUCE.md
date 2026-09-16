@@ -192,6 +192,32 @@ uv run python scripts/m8_plot_egg_inversion.py \
   --water-cut-pdf-output results/figures/egg_water_cut_forecast.pdf
 ```
 
+Derive the zero-simulation stagewise and matched-misfit geology control from the
+same immutable inversion artifacts:
+
+```bash
+uv run python scripts/f1_stagewise_geology.py \
+  --config configs/egg/inversion.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
+  --inversion artifacts/egg_inversion_augmentation_raw.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm.h5 \
+  --inversion-report results/raw/egg_inversion_augmentation_raw.json \
+  --inversion-report results/raw/egg_inversion_augmentation_pca.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm.json \
+  --stagewise-output results/tables/egg_stagewise.csv \
+  --matched-output results/tables/egg_matched_misfit.csv \
+  --figure-output results/figures/egg_misfit_geology_tradeoff.svg \
+  --pdf-output results/figures/egg_misfit_geology_tradeoff.pdf
+```
+
+This diagnostic compares the completed FM inversion with the closest existing
+raw and PCA ES-MDA stages. An intermediate stage is not equivalent to a
+completed run with fewer assimilations; the table records that limitation.
+
 ## Matérn source ablation
 
 Train the three strictly controlled source variants. Each run retains only EMA
