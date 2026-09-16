@@ -189,3 +189,63 @@ uv run python scripts/m8_plot_egg_inversion.py \
   --output results/figures/egg_posterior_comparison.svg \
   --water-cut-output results/figures/egg_water_cut_forecast.svg
 ```
+
+## Matérn source ablation
+
+Train the three strictly controlled source variants. Each run retains only EMA
+snapshots at epochs 4, 8, and 16, the final EMA, and one resume checkpoint:
+
+```bash
+for VARIANT in white matern matern_misspec; do
+  uv run python scripts/m8_train_egg.py \
+    --config "configs/ablation/egg_source_${VARIANT}.yaml" \
+    --strategy augmentation \
+    --data artifacts/egg_augmentation_5000.h5 \
+    --output-dir "artifacts/egg_models/ablation_${VARIANT}" \
+    --manifest "artifacts/ablation_${VARIANT}_training_manifest.json" \
+    --report "results/raw/egg_ablation_${VARIANT}_training.json" \
+    --device auto
+done
+```
+
+Evaluate the complete epoch × ODE-step matrix with the same 128-sample budget:
+
+```bash
+for VARIANT in white matern matern_misspec; do
+  for EPOCH in 4 8 16; do
+    PADDED_EPOCH=$(printf '%04d' "$EPOCH")
+    for STEPS in 10 20 50; do
+      uv run python scripts/m8_evaluate_egg.py \
+        --config "configs/ablation/egg_source_${VARIANT}.yaml" \
+        --strategy-config configs/egg/augmentation.yaml \
+        --metric-config configs/egg/evaluation.yaml \
+        --checkpoint "artifacts/egg_models/ablation_${VARIANT}/ema-epoch-${PADDED_EPOCH}.pt" \
+        --training-data artifacts/egg_augmentation_5000.h5 \
+        --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+        --output "artifacts/egg_ablation_samples_${VARIANT}_e${EPOCH}_s${STEPS}.h5" \
+        --manifest "artifacts/ablation_${VARIANT}_evaluation_manifest.json" \
+        --report "results/raw/egg_ablation_${VARIANT}_e${EPOCH}_s${STEPS}.json" \
+        --integration-steps "$STEPS" --sample-count 128 --device auto
+    done
+  done
+done
+```
+
+The table builder refuses incomplete 27-run matrices:
+
+```bash
+EVALUATION_ARGS=()
+for REPORT in results/raw/egg_ablation_*_e*_s*.json; do
+  EVALUATION_ARGS+=(--evaluation-report "$REPORT")
+done
+uv run python scripts/m9_build_source_ablation.py \
+  --variant-config white=configs/ablation/egg_source_white.yaml \
+  --variant-config matern=configs/ablation/egg_source_matern.yaml \
+  --variant-config matern_misspec=configs/ablation/egg_source_matern_misspec.yaml \
+  --training-report white=results/raw/egg_ablation_white_training.json \
+  --training-report matern=results/raw/egg_ablation_matern_training.json \
+  --training-report matern_misspec=results/raw/egg_ablation_matern_misspec_training.json \
+  "${EVALUATION_ARGS[@]}" \
+  --table-output results/tables/egg_source_ablation.csv \
+  --figure-output results/figures/egg_source_ablation.svg
+```

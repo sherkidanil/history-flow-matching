@@ -1,6 +1,411 @@
 {
   "artifacts": [
     {
+      "config_hash": "d54aca450aa8d8de7ff07f39de05b2589ea01c2e0df24b369e6717cc3a264c81",
+      "created_at": "2026-09-16T06:14:10.897511Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e16_s10.h5",
+      "sha256": "89f3ddde2e394b497b744ed13b05c7618a3aa89ecfbcf55cde33d63aaaaf06a2",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7753940
+    },
+    {
+      "config_hash": "f299578eede754e80f3e22b5eeb579411f75891b15ef20227508265dd41ae33a",
+      "created_at": "2026-09-16T06:14:19.598357Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e16_s20.h5",
+      "sha256": "a058e54eadfa04ecc319bae83eea9cabb7c95ae75bffd1404c8d05fc87d773d7",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7765476
+    },
+    {
+      "config_hash": "1f14f83547bbd6474bf6772fa6d3b6de0a5258d2e419f6c6f8a201b72dd3e162",
+      "created_at": "2026-09-16T06:14:32.027346Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e16_s50.h5",
+      "sha256": "14203f4694f30b27c89521ca917ee7516a5484946d83d93af77a11cd41e34b7f",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7768896
+    },
+    {
+      "config_hash": "d54aca450aa8d8de7ff07f39de05b2589ea01c2e0df24b369e6717cc3a264c81",
+      "created_at": "2026-09-16T06:13:13.898263Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e4_s10.h5",
+      "sha256": "08484ce71ea59fe8af8ec4301c6846a9427a3da0835f00314d1282fdc46eced8",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7607609
+    },
+    {
+      "config_hash": "f299578eede754e80f3e22b5eeb579411f75891b15ef20227508265dd41ae33a",
+      "created_at": "2026-09-16T06:13:22.532471Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e4_s20.h5",
+      "sha256": "0d4330cbedd72b0fdb318f8e32d8d68088c59c00bb3393174cf47c5755dce78a",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7610854
+    },
+    {
+      "config_hash": "1f14f83547bbd6474bf6772fa6d3b6de0a5258d2e419f6c6f8a201b72dd3e162",
+      "created_at": "2026-09-16T06:13:34.778667Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e4_s50.h5",
+      "sha256": "46d3cccab9038f9ad8c02d2c55c14cbab79a7ca9c88ecfad45b5bfb9f67b66b5",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7612166
+    },
+    {
+      "config_hash": "d54aca450aa8d8de7ff07f39de05b2589ea01c2e0df24b369e6717cc3a264c81",
+      "created_at": "2026-09-16T06:13:42.298141Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e8_s10.h5",
+      "sha256": "81e04814adfd57a787e1b1f2c4e83f7dcc0d77c89083ffae3911e9a32277c20c",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7740681
+    },
+    {
+      "config_hash": "f299578eede754e80f3e22b5eeb579411f75891b15ef20227508265dd41ae33a",
+      "created_at": "2026-09-16T06:13:51.011371Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e8_s20.h5",
+      "sha256": "2b7ed3c42a3d5c5ae4b17948f0409b221c66e88f5c56bef3294103056a36667f",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7745289
+    },
+    {
+      "config_hash": "1f14f83547bbd6474bf6772fa6d3b6de0a5258d2e419f6c6f8a201b72dd3e162",
+      "created_at": "2026-09-16T06:14:03.359519Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_e8_s50.h5",
+      "sha256": "8a917afe9264b0e4938014e72b4dda5f6ea30bb869cdcefefcc3b69a955ab166",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7747038
+    },
+    {
+      "config_hash": "8567bbd85c59e7f11fee2bd5ff6041ddbb361f28acde27e7ed69b83a94f99190",
+      "created_at": "2026-09-16T06:12:42.803617Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e16_s10.h5",
+      "sha256": "d730438618779db12d502e1d4ce2a480d484d2c3df66a1b248aca46904871634",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7747456
+    },
+    {
+      "config_hash": "5a41876eafef59f158cd450524b9103aa302ce3807d01c0c8996bf9fbf6687f7",
+      "created_at": "2026-09-16T06:12:51.419621Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e16_s20.h5",
+      "sha256": "c77519b4c777149365eb18531fbc590a011f73d750d9af335c58e02a98560488",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7757613
+    },
+    {
+      "config_hash": "6a8728c62181a69e590e02f23cdcf34260196813c2cfad2daf0fb8b38436b882",
+      "created_at": "2026-09-16T06:13:03.718521Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e16_s50.h5",
+      "sha256": "2c0caf2fce87569b789f0ecc1f9bf723dd736a6b04a18fb27f494107f9963d4b",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7759866
+    },
+    {
+      "config_hash": "8567bbd85c59e7f11fee2bd5ff6041ddbb361f28acde27e7ed69b83a94f99190",
+      "created_at": "2026-09-16T06:11:46.240729Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e4_s10.h5",
+      "sha256": "fd7e297ba30a432906ca2630a1ad00020590c275402b9ed43c0ca9f8345c27a0",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7536997
+    },
+    {
+      "config_hash": "5a41876eafef59f158cd450524b9103aa302ce3807d01c0c8996bf9fbf6687f7",
+      "created_at": "2026-09-16T06:11:54.917444Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e4_s20.h5",
+      "sha256": "ca9eee4476190bcec6ac842566c633b8e0cf9e23c6e5e2c9a4f931c9731e84c5",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7540764
+    },
+    {
+      "config_hash": "6a8728c62181a69e590e02f23cdcf34260196813c2cfad2daf0fb8b38436b882",
+      "created_at": "2026-09-16T06:12:07.060588Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e4_s50.h5",
+      "sha256": "dfc49fafad9596c93df238fa72203b3cad15d1485554ec7bfefc626913b6d572",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7541910
+    },
+    {
+      "config_hash": "8567bbd85c59e7f11fee2bd5ff6041ddbb361f28acde27e7ed69b83a94f99190",
+      "created_at": "2026-09-16T06:12:14.507013Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e8_s10.h5",
+      "sha256": "a7c7fe95428c396b70f7c635fe7b09d9e3dcb11363942bd4874fab8d8570bcd4",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7707517
+    },
+    {
+      "config_hash": "5a41876eafef59f158cd450524b9103aa302ce3807d01c0c8996bf9fbf6687f7",
+      "created_at": "2026-09-16T06:12:23.052067Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e8_s20.h5",
+      "sha256": "a45eceb94a858bde9b639585c0241f10e06ed8ec5fa5cd4c362f9ff2a6a9e711",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7712887
+    },
+    {
+      "config_hash": "6a8728c62181a69e590e02f23cdcf34260196813c2cfad2daf0fb8b38436b882",
+      "created_at": "2026-09-16T06:12:35.291660Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_matern_misspec_e8_s50.h5",
+      "sha256": "1f3408829adc1995b00be57c926edf5e69e75c29526536830147ee366cf31d54",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7714138
+    },
+    {
+      "config_hash": "4fc6e2a2450c7857c791eb101bb6bc2b1f9bcf113ffb22e6c0fb36bf2ea9da51",
+      "created_at": "2026-09-16T06:11:30.011047Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e16_s10.h5",
+      "sha256": "862925e99e0d0f29e3af545f2553f83c5ca04ab93a8be7b71e2b4b4d985d6139",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7786617
+    },
+    {
+      "config_hash": "51ecbbfbd3142a7216b4ce351be230c4e1c5382453ed402e7031d452d178426c",
+      "created_at": "2026-09-16T06:11:38.663370Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e16_s20.h5",
+      "sha256": "b07fb0ab969eb753eca761891cbdb86d6805171047e62c48803e21a0f3a390e5",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7792829
+    },
+    {
+      "config_hash": "70a6760e36654fb40c517e85432ac69a3dff54ba1a280e8acfd62c8d3028cde4",
+      "created_at": "2026-09-16T06:11:51.111678Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e16_s50.h5",
+      "sha256": "366ff9c19ccf0fcb27083772315011c5b2cd6d103fe773a65014e0c4f3f1a36d",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7795413
+    },
+    {
+      "config_hash": "4fc6e2a2450c7857c791eb101bb6bc2b1f9bcf113ffb22e6c0fb36bf2ea9da51",
+      "created_at": "2026-09-16T06:10:33.532366Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e4_s10.h5",
+      "sha256": "290c28ca01059393a4f396b008bbee73a0e95af9b4b5bb1f131852ae20bb5045",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7654241
+    },
+    {
+      "config_hash": "51ecbbfbd3142a7216b4ce351be230c4e1c5382453ed402e7031d452d178426c",
+      "created_at": "2026-09-16T06:10:42.007241Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e4_s20.h5",
+      "sha256": "326f8873f02b8f752c922952d6b0b9f8951b9b2b4979896ad8b92e7903d92620",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7657911
+    },
+    {
+      "config_hash": "70a6760e36654fb40c517e85432ac69a3dff54ba1a280e8acfd62c8d3028cde4",
+      "created_at": "2026-09-16T06:10:54.169702Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e4_s50.h5",
+      "sha256": "3926a6c7fcff4cf39a7e2ffed52df17f8a9f3f135933652baf281b0eb6cfd2ab",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7658798
+    },
+    {
+      "config_hash": "4fc6e2a2450c7857c791eb101bb6bc2b1f9bcf113ffb22e6c0fb36bf2ea9da51",
+      "created_at": "2026-09-16T06:11:01.744307Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e8_s10.h5",
+      "sha256": "f9cfa670994a31d97d60eb0f6e612350ba13162d2b9fa2a452280f2ee71cdfb2",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7753110
+    },
+    {
+      "config_hash": "51ecbbfbd3142a7216b4ce351be230c4e1c5382453ed402e7031d452d178426c",
+      "created_at": "2026-09-16T06:11:10.288539Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e8_s20.h5",
+      "sha256": "54538d52ce4586c8e853f0875caefdb6460ad0d45832ecbde4948a6ccc6800d9",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7758688
+    },
+    {
+      "config_hash": "70a6760e36654fb40c517e85432ac69a3dff54ba1a280e8acfd62c8d3028cde4",
+      "created_at": "2026-09-16T06:11:22.469530Z",
+      "dtype": "float32",
+      "git_commit": "692f98538f7cdfb8f9883bb7c2d50257b1e58f35",
+      "path": "artifacts/egg_ablation_samples_white_e8_s50.h5",
+      "sha256": "a50dad1060d6765e0c36e9930ee8c332d40104188fa8889ee076ee050669200b",
+      "shape": [
+        128,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 7761484
+    },
+    {
       "config_hash": "f6c92299a3b963e1bce9cdebf124bdc2708346a8919b6152e919693ff35067d8",
       "created_at": "2026-09-15T10:11:56.089513Z",
       "dtype": "float32",
@@ -107,6 +512,186 @@
         60
       ],
       "size_bytes": 69770032
+    },
+    {
+      "config_hash": "71d12a78e3b565b12b4186770fad7c8e9662d0c02d5a0b02d98d376f12c19c4a",
+      "created_at": "2026-09-16T06:09:51.515109Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern/ema-epoch-0004.pt",
+      "sha256": "b3f89b5fad79307282dcd6896a1f43e9f434a82b2ce7fd2c3fe6fda9a7798db0",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "71d12a78e3b565b12b4186770fad7c8e9662d0c02d5a0b02d98d376f12c19c4a",
+      "created_at": "2026-09-16T06:09:51.522824Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern/ema-epoch-0008.pt",
+      "sha256": "7bd229ecbe522b2d295552f94265f1b8574673efb2302420b63e7b8e3fbd93d6",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "71d12a78e3b565b12b4186770fad7c8e9662d0c02d5a0b02d98d376f12c19c4a",
+      "created_at": "2026-09-16T06:09:51.530469Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern/ema-epoch-0016.pt",
+      "sha256": "4ec0ab6539067b1740fd74270b79038577b0c1cd9e3c36d6648706915572bc81",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "71d12a78e3b565b12b4186770fad7c8e9662d0c02d5a0b02d98d376f12c19c4a",
+      "created_at": "2026-09-16T06:09:51.538084Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern/ema.pt",
+      "sha256": "9023af7c512da3910ff1c2088f09d39201f0609db0dec67669b48d5fce83d004",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3114318
+    },
+    {
+      "config_hash": "71d12a78e3b565b12b4186770fad7c8e9662d0c02d5a0b02d98d376f12c19c4a",
+      "created_at": "2026-09-16T06:09:51.560621Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern/resume.pt",
+      "sha256": "0c39107c2e424f163231a2d1ef33c6f01712b265f831e27769ecbb2dea163070",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 9361110
+    },
+    {
+      "config_hash": "3cbd59bad34ca6bc93d62c12fa04117f77a89a51b9cdf8fc91d0c8eb8ac63bcb",
+      "created_at": "2026-09-16T06:04:30.969512Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern_misspec/ema-epoch-0004.pt",
+      "sha256": "bda7a126afe3deca766f8f403423526fa971b6e295291f8c4a370ffa6c591594",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "3cbd59bad34ca6bc93d62c12fa04117f77a89a51b9cdf8fc91d0c8eb8ac63bcb",
+      "created_at": "2026-09-16T06:04:30.977217Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern_misspec/ema-epoch-0008.pt",
+      "sha256": "d8d5f6f33fd94433e51867d50439d9da2440ee2dcc540963a62967e979764547",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "3cbd59bad34ca6bc93d62c12fa04117f77a89a51b9cdf8fc91d0c8eb8ac63bcb",
+      "created_at": "2026-09-16T06:04:30.984875Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern_misspec/ema-epoch-0016.pt",
+      "sha256": "9aac7591e2a7e8a04c2e8fa01453ef740cb1b1eeb87c0d78ff153ec255c56d80",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "3cbd59bad34ca6bc93d62c12fa04117f77a89a51b9cdf8fc91d0c8eb8ac63bcb",
+      "created_at": "2026-09-16T06:04:30.992587Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern_misspec/ema.pt",
+      "sha256": "8a3fecce4178676ca800f1c497f3e55164df34f833137e587204cd7a8b549ff1",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3114318
+    },
+    {
+      "config_hash": "3cbd59bad34ca6bc93d62c12fa04117f77a89a51b9cdf8fc91d0c8eb8ac63bcb",
+      "created_at": "2026-09-16T06:04:31.015317Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_matern_misspec/resume.pt",
+      "sha256": "125d4d41c5a55ca2a1d3e0a21ad52bead5cf430789c321ddd119040a1cf4af6a",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 9361110
+    },
+    {
+      "config_hash": "edea6efc50ed4bb71fca69c1a18f87120da1fe10af01920ea9394736fbcbe1b4",
+      "created_at": "2026-09-16T06:04:26.860336Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_white/ema-epoch-0004.pt",
+      "sha256": "805e8bad69b7baaf8ac4c81611568139fd8c1cbab12dd812ad36d85cee562f0b",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "edea6efc50ed4bb71fca69c1a18f87120da1fe10af01920ea9394736fbcbe1b4",
+      "created_at": "2026-09-16T06:04:26.868578Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_white/ema-epoch-0008.pt",
+      "sha256": "220efc9d47ea776e27e53af18ef0432c4e47f4afc2cdd7bce49c194007c5a792",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "edea6efc50ed4bb71fca69c1a18f87120da1fe10af01920ea9394736fbcbe1b4",
+      "created_at": "2026-09-16T06:04:26.877044Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_white/ema-epoch-0016.pt",
+      "sha256": "357217759522a3fd00e230f26e4994dfe0df2f23c05dfca77c7e502e46e1fa52",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3115284
+    },
+    {
+      "config_hash": "edea6efc50ed4bb71fca69c1a18f87120da1fe10af01920ea9394736fbcbe1b4",
+      "created_at": "2026-09-16T06:04:26.885352Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_white/ema.pt",
+      "sha256": "aa234035e7697e26c4d932c6599a995e3eedcc062dc690ba3b58a124f7bb2f24",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 3114318
+    },
+    {
+      "config_hash": "edea6efc50ed4bb71fca69c1a18f87120da1fe10af01920ea9394736fbcbe1b4",
+      "created_at": "2026-09-16T06:04:26.907974Z",
+      "dtype": "torch.float32",
+      "git_commit": "595857c6d6344b79aafea46e4a438fb92da92ba6",
+      "path": "artifacts/egg_models/ablation_white/resume.pt",
+      "sha256": "b153f219c3d98d3822c88e206a8dac799782b3102f40e3575c72205105f6f07b",
+      "shape": [
+        772241
+      ],
+      "size_bytes": 9361110
     },
     {
       "config_hash": "2d1906d3a78e95237327fae58081c006e94695bcd9b709c3b1659a87287ddb46",
