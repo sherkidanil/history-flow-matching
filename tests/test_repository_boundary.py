@@ -28,6 +28,16 @@ def test_tracked_private_paths_are_reported(tmp_path: Path) -> None:
     assert find_tracked_prohibited(tmp_path) == [".env"]
 
 
+def test_published_report_is_the_only_allowed_reports_path(tmp_path: Path) -> None:
+    init_repo(tmp_path)
+    (tmp_path / "REPORTS").mkdir()
+    (tmp_path / "REPORTS" / "REPORT.md").write_text("public\n", encoding="utf-8")
+    (tmp_path / "REPORTS" / "notes.md").write_text("private\n", encoding="utf-8")
+    git(tmp_path, "add", "-f", "REPORTS/REPORT.md", "REPORTS/notes.md")
+
+    assert find_tracked_prohibited(tmp_path) == ["REPORTS/notes.md"]
+
+
 def test_staged_secret_key_names_are_reported(tmp_path: Path) -> None:
     init_repo(tmp_path)
     (tmp_path / "settings.txt").write_text(
@@ -51,4 +61,3 @@ def test_ci_covers_linux_and_macos_with_locked_uv() -> None:
 
     assert matrix == ["ubuntu-latest", "macos-latest"]
     assert any(step.get("run") == "uv sync --locked" for step in steps)
-
