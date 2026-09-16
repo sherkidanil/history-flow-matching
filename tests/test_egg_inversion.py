@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -11,6 +12,12 @@ from fmgeo.inverse.egg import (
     load_egg_inversion_config,
     run_egg_esmda,
 )
+
+repository = Path(__file__).parents[1]
+sys.path.insert(0, str(repository / "scripts"))
+from m8_invert_egg import _resolve_parameterization_label  # noqa: E402
+
+sys.path.pop(0)
 
 
 def _write_config(path: Path, *, inflations: str = "[4.0, 4.0, 4.0, 4.0]") -> Path:
@@ -46,6 +53,16 @@ def test_egg_inversion_config_validates_standard_protocol(tmp_path: Path) -> Non
     assert config.ensemble_size == 100
     assert config.observation_count == 160
     assert config.inflations == (4.0, 4.0, 4.0, 4.0)
+
+
+def test_parameterization_label_defaults_to_method_and_accepts_fm_variant() -> None:
+    assert _resolve_parameterization_label("raw", None) == "raw"
+    assert _resolve_parameterization_label("fm", "matern_misspec") == "matern_misspec"
+
+
+def test_parameterization_label_rejects_empty_value() -> None:
+    with pytest.raises(ValueError, match="non-empty"):
+        _resolve_parameterization_label("fm", "  ")
 
 
 def test_egg_inversion_config_rejects_invalid_inflations(tmp_path: Path) -> None:

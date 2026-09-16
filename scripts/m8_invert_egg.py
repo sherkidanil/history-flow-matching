@@ -37,6 +37,15 @@ from fmgeo.runtime import select_device
 Method = Literal["raw", "pca", "fm"]
 
 
+def _resolve_parameterization_label(method: Method, label: str | None) -> str:
+    if label is None:
+        return method
+    resolved = label.strip()
+    if not resolved:
+        raise ValueError("parameterization label must be non-empty")
+    return resolved
+
+
 def _embed_active(parameters: np.ndarray, active: np.ndarray) -> np.ndarray:
     fields = np.zeros((len(parameters), *active.shape), dtype=np.float64)
     fields[:, active] = parameters
@@ -143,6 +152,7 @@ def _write_stage(handle: h5py.File, index: int, stage: EggAssimilationStage) -> 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--method", choices=("raw", "pca", "fm"), required=True)
+    parser.add_argument("--parameterization-label")
     parser.add_argument("--strategy", required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--fm-config", type=Path)
@@ -163,6 +173,9 @@ def main() -> int:
     parser.add_argument("--git-commit")
     args = parser.parse_args()
     method: Method = args.method
+    parameterization_label = _resolve_parameterization_label(
+        method, args.parameterization_label
+    )
     if args.batch_size < 1:
         raise ValueError("batch size must be positive")
     if method == "fm" and not all((args.fm_config, args.checkpoint, args.training_data)):
@@ -244,11 +257,14 @@ def main() -> int:
         "simulator_id": args.simulator_id,
         **parameterization,
     }
+    if args.parameterization_label is not None:
+        provenance["parameterization_label"] = parameterization_label
     experiment_hash = canonical_config_hash(provenance)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with h5py.File(args.output, "w") as output:
         output.attrs["config_hash"] = experiment_hash
         output.attrs["method"] = method
+        output.attrs["parameterization_label"] = parameterization_label
         output.attrs["strategy"] = args.strategy
         output.create_dataset("truth_data", data=truth_data.astype(np.float32))
         output.create_dataset("observation", data=observation.astype(np.float32))
@@ -305,6 +321,7 @@ def main() -> int:
     report = {
         "benchmark": "Egg",
         "method": method,
+        "parameterization_label": parameterization_label,
         "strategy": args.strategy,
         "config_hash": experiment_hash,
         "prior_sha256": sha256_file(args.prior_fields),
