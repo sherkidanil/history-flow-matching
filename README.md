@@ -11,10 +11,13 @@ derived from provenance-bearing raw artifacts.
 
 ## Status
 
-The repository is under active development. The cross-platform `uv`
-environment, benchmark validation, numerical foundations, and a storage-safe
-OPM Flow runner are implemented. M0 is verified against SPE1 with Flow 2026.04;
-measured details are in `ENVIRONMENT.md`.
+The cross-platform `uv` environment, storage-safe OPM Flow runner, Egg
+raw/PCA/FM inversion, controlled source ablation, and U-Net/UNO
+cross-resolution experiment are implemented with content-addressed artifacts.
+M0 is verified against SPE1 with Flow 2026.04. PUNQ-S3 assimilation remains
+blocked because the available truth deck fails the published-FOPT validation
+gate; no PUNQ benchmark result is claimed. Measured details are in
+`ENVIRONMENT.md`, and exact commands are in `REPRODUCE.md`.
 
 ## Development
 

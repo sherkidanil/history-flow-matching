@@ -256,6 +256,9 @@ uv run python scripts/m9_build_source_ablation.py \
 Run the three final source-inversion comparisons with the same held-out truth,
 initial physical ensemble, ES-MDA schedule, and simulator budget:
 
+On the measured 64-CPU cluster, allow about 22 minutes per variant when run
+sequentially (500 restart-free OPM simulations each).
+
 ```bash
 for VARIANT in white matern matern_misspec; do
   uv run python scripts/m8_invert_egg.py \
@@ -302,6 +305,9 @@ uv run python scripts/m9_build_source_inversions.py \
 
 Build the deterministic active-aware 7x30x30 training artifact:
 
+The measured local macOS build takes about five seconds and produces an 83 MB
+HDF5 artifact.
+
 ```bash
 uv run python scripts/m9_pool_egg.py \
   --input artifacts/egg_augmentation_5000.h5 \
@@ -314,6 +320,9 @@ uv run python scripts/m9_pool_egg.py \
 Train the matched coarse U-Net/UNO source pairs and the direct full-resolution
 UNO references. The Matérn correlation lengths are `[1,2,4]` coarse-grid cells
 and `[1,4,8]` full-grid cells, representing the same physical lengths:
+
+The measured A100 runs took roughly one to three minutes per model; independent
+models can use separate idle GPUs.
 
 ```bash
 for ARCHITECTURE in unet uno; do
@@ -344,6 +353,9 @@ Evaluate each coarse checkpoint on its native grid and after transfer to the
 full grid, then evaluate the direct full-grid checkpoint. All full-grid metrics
 use 20 fine-cell lags; coarse metrics use 10 two-fine-cell lags, so both cover
 the same physical distance:
+
+The measured 128-sample, 50-step evaluations took tens of seconds per run on
+an A100; the four architecture/source groups are independent.
 
 ```bash
 for ARCHITECTURE in unet uno; do
