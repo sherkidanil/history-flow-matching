@@ -53,17 +53,18 @@ def _build_rows(
 ) -> list[dict[str, object]]:
     """Summarize final stages with geology, UQ, collapse, and provenance."""
 
-    if set(inversions) != set(METHODS) or set(reports) != set(METHODS):
-        raise ValueError("exactly one raw, PCA, and FM artifact and report are required")
+    if not inversions or set(inversions) != set(reports):
+        raise ValueError("every labeled inversion must have one matching report")
     truth_connectivity = egg_well_connectivity(truth, threshold=threshold, wells=wells)
     rows: list[dict[str, object]] = []
-    for method in METHODS:
-        artifact_path = inversions[method]
-        report_path = reports[method]
+    for variant in inversions:
+        artifact_path = inversions[variant]
+        report_path = reports[variant]
         report = _load_report(report_path)
+        method = str(report["method"])
         artifact_hash = sha256_file(artifact_path)
-        if str(report["method"]) != method:
-            raise ValueError("remedy report method does not match its input label")
+        if method not in METHODS:
+            raise ValueError(f"unsupported inversion method: {method}")
         if str(report["artifact"]["sha256"]) != artifact_hash:
             raise ValueError("remedy artifact hash does not match its report")
         final_report = report["stages"][-1]
@@ -96,6 +97,7 @@ def _build_rows(
         rows.append(
             {
                 "strategy": report["strategy"],
+                "variant": variant,
                 "parameterization": method,
                 "parameterization_label": parameterization_label,
                 "remedy": report["remedy"],

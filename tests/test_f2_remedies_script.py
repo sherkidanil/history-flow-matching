@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -94,3 +95,36 @@ def test_build_remedy_rows_combines_science_collapse_and_provenance(
     assert all(row["effective_ensemble_members"] == 3.0 for row in rows)
     assert all(row["source_git_commit"] == "c" * 40 for row in rows)
     assert all(row["derived_git_commit"] == "d" * 40 for row in rows)
+
+
+def test_build_remedy_rows_accepts_two_labeled_raw_variants(tmp_path: Path) -> None:
+    inputs = {method: _write_inputs(tmp_path, method) for method in ("raw", "pca", "fm")}
+    second_raw = tmp_path / "raw_unlocalized.h5"
+    second_report = tmp_path / "raw_unlocalized.json"
+    shutil.copy2(inputs["raw"][0], second_raw)
+    shutil.copy2(inputs["raw"][1], second_report)
+    inversions = {
+        "raw_localized": inputs["raw"][0],
+        "fm_localized": inputs["fm"][0],
+        "pca_unlocalized": inputs["pca"][0],
+        "raw_unlocalized": second_raw,
+    }
+    reports = {
+        "raw_localized": inputs["raw"][1],
+        "fm_localized": inputs["fm"][1],
+        "pca_unlocalized": inputs["pca"][1],
+        "raw_unlocalized": second_report,
+    }
+
+    rows = _build_rows(
+        inversions,
+        reports=reports,
+        truth=np.asarray([[[[0.0, 2.0]]]]),
+        active=np.ones((1, 1, 2), dtype=bool),
+        threshold=1.0,
+        wells={"INJECT1": (0, 0), "PROD1": (0, 1)},
+        derived_git_commit="d" * 40,
+    )
+
+    assert {row["variant"] for row in rows} == set(inversions)
+    assert [row["parameterization"] for row in rows].count("raw") == 2
