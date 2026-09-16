@@ -78,3 +78,43 @@ def relative_frobenius_shift(reference: ArrayLike, updated: ArrayLike) -> float:
     if denominator <= 0:
         raise ValueError("reference array must have positive norm")
     return float(np.linalg.norm(after - before) / denominator)
+
+
+def ensemble_collapse_diagnostics(
+    fields: ArrayLike,
+    *,
+    prior_fields: ArrayLike,
+    active: ArrayLike,
+) -> dict[str, float]:
+    """Measure field spread, prior-relative shift, and anomaly participation.
+
+    ``effective_ensemble_members`` is one plus the covariance-eigenvalue
+    participation ratio. It ranges from one for an identical ensemble to the
+    actual member count when all ``N - 1`` anomaly directions contribute equally.
+    """
+
+    values = np.asarray(fields, dtype=np.float64)
+    prior = np.asarray(prior_fields, dtype=np.float64)
+    mask = np.asarray(active, dtype=bool)
+    if values.shape != prior.shape or values.ndim != 4:
+        raise ValueError("fields and prior_fields must have the same shape")
+    if mask.shape != values.shape[1:] or not np.any(mask):
+        raise ValueError("active mask must match the field shape")
+    if not np.all(np.isfinite(values)) or not np.all(np.isfinite(prior)):
+        raise ValueError("field ensembles must be finite")
+    active_values = values[:, mask]
+    anomalies = active_values - active_values.mean(axis=0)
+    eigenvalues = np.linalg.eigvalsh(anomalies @ anomalies.T)
+    eigenvalues = np.clip(eigenvalues, 0.0, None)
+    energy = float(eigenvalues.sum())
+    participation = (
+        0.0 if energy == 0.0 else energy**2 / float(np.sum(eigenvalues**2))
+    )
+    effective = min(float(len(values)), 1.0 + participation)
+    return {
+        "mean_field_spread": float(np.std(active_values, axis=0, ddof=1).mean()),
+        "relative_field_shift_from_prior": relative_frobenius_shift(
+            prior[:, mask], active_values
+        ),
+        "effective_ensemble_members": effective,
+    }

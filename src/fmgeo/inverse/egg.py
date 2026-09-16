@@ -6,6 +6,7 @@ from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import yaml
@@ -16,6 +17,21 @@ from fmgeo.config import StrictModel
 from fmgeo.forward.egg import EGG_PRODUCERS
 from fmgeo.forward.runner import ForwardResult
 from fmgeo.inverse.esmda import esmda_update, validate_inflations
+
+
+class EggLocalizationConfig(StrictModel):
+    """Optional cell-to-well covariance localization settings."""
+
+    enabled: bool = False
+    kind: Literal["gaspari_cohn"] = "gaspari_cohn"
+    radius_m: float = Field(default=64.0, gt=0)
+    cell_size_yx_m: tuple[float, float] = (8.0, 8.0)
+
+    @model_validator(mode="after")
+    def validate_cell_sizes(self) -> EggLocalizationConfig:
+        if any(value <= 0 for value in self.cell_size_yx_m):
+            raise ValueError("localization cell sizes must be positive")
+        return self
 
 
 class EggInversionConfig(StrictModel):
@@ -38,6 +54,8 @@ class EggInversionConfig(StrictModel):
     workers: int = Field(ge=1)
     timeout_seconds: float = Field(gt=0)
     min_free_disk_gb: float = Field(ge=0)
+    localization: EggLocalizationConfig = EggLocalizationConfig()
+    fm_latent_pca: bool = False
 
     @model_validator(mode="after")
     def validate_protocol(self) -> EggInversionConfig:
@@ -141,6 +159,7 @@ def run_egg_esmda(
     rng: np.random.Generator,
     workers: int,
     svd_energy: float,
+    localization: ArrayLike | None = None,
     on_stage: Callable[[int, EggAssimilationStage], None] | None = None,
 ) -> tuple[EggAssimilationStage, ...]:
     """Run all ES-MDA stages, refusing to silently discard failed members."""
@@ -178,6 +197,7 @@ def run_egg_esmda(
             observation_covariance=observation_covariance,
             inflation=inflation_schedule[stage_index],
             rng=rng,
+            localization=localization,
             svd_energy=svd_energy,
         )
     return tuple(stages)
