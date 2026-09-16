@@ -70,6 +70,34 @@ After removing only the completed experiment controller/evaluation containers,
 the remote repository occupied 1.7 GiB, its transient work root 5.4 MiB, and
 the `/mnt/local` filesystem had 31 GiB free. No OPM restart files remained.
 
+M9 ran on 2026-09-16 with the same Python 3.11/PyTorch 2.4.1 CUDA 12.1
+controller image. The controlled source matrix contains three 5,008-step U-Net
+fits and 27 complete 128-sample evaluations. The active-aware 2x Egg pooling
+step produced a `(5000, 7, 30, 30)` float32 artifact of 82,913,041 bytes with
+SHA-256 `1da6dc38997fb1a3ccaf79b9823b56b5a86175d0b2342f02cfb4c376fe1a6497`;
+18,553 fine active cells map to 4,827 coarse cells. Four coarse U-Net/UNO and
+two direct full-resolution UNO models each completed 5,008 optimizer steps.
+The complete resolution matrix contains 12 successful 128-sample, 50-step
+Heun evaluations. Controller checks measured 64 CPUs, 503 GiB RAM, and eight
+NVIDIA A100 80GB PCIe GPUs. Heavy jobs used only GPUs observed idle at launch.
+
+The first source-inversion controller attempt failed before assimilation
+because the PyTorch image lacked the Docker CLI required by the nested
+storage-safe OPM wrapper. A one-case probe isolated `docker: not found`; the
+corrected controllers mount the host's dynamically linked Docker client and
+socket. The probe returned `flow 2026.04`, and all subsequent source-inversion
+forward calls completed through the same wrapper while preserving the 20 GiB
+disk reserve. The failed partial HDF5 and its stopped controller were removed
+before the validated run; no failed result entered the manifest.
+
+The three source-inversion ablations each completed 500/500 OPM simulations
+with no failures. Summed simulator runtimes were 18,492.144 s for white,
+18,734.606 s for fitted Matérn, and 18,554.267 s for the misspecified Matérn
+source. After removing only their completed controller and empty work roots,
+the remote repository occupied 2.4 GiB, the transient work root 5.4 MiB, and
+`/mnt/local` had 30 GiB free. The local checkout occupied 3.1 GiB, including
+1.9 GiB of artifacts and 3.6 MiB of result files.
+
 <!-- BEGIN AUTO-GENERATED M0 PROBE -->
 ## Latest measured M0 probe
 

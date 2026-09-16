@@ -481,6 +481,38 @@
       "size_bytes": 57147612
     },
     {
+      "config_hash": "ea42133fc15da104e5028dd68bec09b02feb7a835ad0629ea09bf9598dbf1836",
+      "created_at": "2026-09-16T07:18:52.255582Z",
+      "dtype": "float32",
+      "git_commit": "1cc00ab467c4bd8cf37a210b1e0477030f7383db",
+      "path": "artifacts/egg_inversion_ablation_matern_fm.h5",
+      "sha256": "f4bb4fe2e475fcc0db59d40604947b6f15821a46f58f4b1a6d07648f86b8632e",
+      "shape": [
+        5,
+        100,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 72680359
+    },
+    {
+      "config_hash": "e76f9e162623e8f68dbfbc680c944ced8580285d0741a50305ea6535e7161c59",
+      "created_at": "2026-09-16T07:41:49.009098Z",
+      "dtype": "float32",
+      "git_commit": "1cc00ab467c4bd8cf37a210b1e0477030f7383db",
+      "path": "artifacts/egg_inversion_ablation_matern_misspec_fm.h5",
+      "sha256": "4695c2db18117d41ce45a201ec0b34d517947c96a43756e1d93a207633cef719",
+      "shape": [
+        5,
+        100,
+        7,
+        60,
+        60
+      ],
+      "size_bytes": 72580223
+    },
+    {
       "config_hash": "3d1913be60ecb559066f40ff871ee93b25189becedf40031251cbfac6c356abb",
       "created_at": "2026-09-16T06:55:38.364164Z",
       "dtype": "float32",
