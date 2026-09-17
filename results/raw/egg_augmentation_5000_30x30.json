@@ -1,0 +1,39 @@
+{
+  "active_cells_input": 18553,
+  "active_cells_output": 4827,
+  "artifact": {
+    "config_hash": "4bfcd4eb09c0bba51b01ad2d426a9aec76f6ac54daeb9daedc93dafa328c200f",
+    "created_at": "2026-09-16T06:40:32.164668Z",
+    "dtype": "float32",
+    "git_commit": "b58f200fe6b49b2ad2c5482047133098b3491647",
+    "path": "artifacts/egg_augmentation_5000_30x30.h5",
+    "sha256": "1da6dc38997fb1a3ccaf79b9823b56b5a86175d0b2342f02cfb4c376fe1a6497",
+    "shape": [
+      5000,
+      7,
+      30,
+      30
+    ],
+    "size_bytes": 82913041
+  },
+  "benchmark": "Egg",
+  "input": "artifacts/egg_augmentation_5000.h5",
+  "input_shape": [
+    5000,
+    7,
+    60,
+    60
+  ],
+  "output_shape": [
+    5000,
+    7,
+    30,
+    30
+  ],
+  "transform": {
+    "factor": 2,
+    "kind": "active_aware_horizontal_average_pool",
+    "schema_version": 1,
+    "source_sha256": "e03ae3a9bfc338b0c972ed4d2a7b4e9e2dfa7cc4c9c80f6223a125386797a4b7"
+  }
+}

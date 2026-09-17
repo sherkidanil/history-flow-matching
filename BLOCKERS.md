@@ -26,6 +26,28 @@ Entries must be dated and must distinguish measured facts from hypotheses.
 
 ## Open blockers
 
+### FM assimilation failure is not explained by the in-sample linear-response fit
+
+- **Measured (2026-09-16, before remedy runs):** On the common 100-member Egg
+  stage-0 ensemble, the truncated-SVD linear-response diagnostic gives
+  `R²_lin = 1.0000` for raw, `0.98830` for PCA, and `1.0000` for FM. Thus the
+  proposed low-FM-`R²` mechanism is not supported by this in-sample diagnostic;
+  with up to 99 anomaly directions, it can interpolate the ensemble response.
+- **Measured decoder nonlinearity:** Across 200 fixed random member pairs, the
+  FM midpoint-affinity error has P10/P50/P90
+  `0.07577 / 0.08427 / 0.09331`; raw is exactly zero and PCA is below
+  `1.62e-8`.
+- **Measured update attenuation:** Across the four original FM assimilation
+  steps, relative latent shifts are `0.7324, 0.6012, 0.5069, 0.4561`, while
+  corresponding field shifts are only `0.1156, 0.1020, 0.09381, 0.09029`.
+  The field/latent shift ratios are `0.1579–0.1980`.
+- **Interpretation:** Decoder nonlinearity and attenuation are directly
+  observed, but they do not by themselves prove that nonlinearity caused the
+  high final data misfit. Remedy comparisons must therefore be treated as
+  controlled empirical tests, not confirmation of a preselected mechanism.
+- **Sources:** `results/tables/f2_linearity.csv` and
+  `results/raw/f2_linearity.json`.
+
 ### OPM Flow does not reproduce the official PUNQ-S3 truth forecast
 
 - **Observed (2026-09-15):** The official deck needed explicit `TABDIMS`,

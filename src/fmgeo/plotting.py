@@ -31,3 +31,7 @@ def save_vector_figure(
         raise ValueError("publication figure output must end in .svg or .pdf")
     destination.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(destination, format=vector_format, metadata=metadata)
+    if vector_format == "svg":
+        rendered = destination.read_text(encoding="utf-8")
+        normalized = "\n".join(line.rstrip() for line in rendered.splitlines()) + "\n"
+        destination.write_text(normalized, encoding="utf-8")

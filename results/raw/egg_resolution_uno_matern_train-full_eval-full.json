@@ -1,0 +1,62 @@
+{
+  "artifact": {
+    "config_hash": "f690e8fca0575e033b9588e9cf6acdca00000565eda24fc21367a65e95cb508a",
+    "created_at": "2026-09-16T06:59:48.595159Z",
+    "dtype": "float32",
+    "git_commit": "dd7a6719abf345b7db5c4a45c471950e0a84c9ac",
+    "path": "artifacts/egg_resolution_samples_uno_matern_train-full_eval-full.h5",
+    "sha256": "fc151427a203d15fcf3671b81ecbc83ab25845fa7fa5e7813028568c3af15356",
+    "shape": [
+      128,
+      7,
+      60,
+      60
+    ],
+    "size_bytes": 7675199
+  },
+  "benchmark": "Egg",
+  "checkpoint": "artifacts/egg_models/resolution_uno_matern_full/ema-epoch-0016.pt",
+  "checkpoint_epoch": 16,
+  "evaluation_shape_zyx": [
+    7,
+    60,
+    60
+  ],
+  "high_permeability_threshold_logk": 6.8484296798706055,
+  "integration_steps": 50,
+  "max_variogram_lag": 20,
+  "metric_config_hash": "39cc0187e2be86f63f909707aa640baee68d13b3c7deaa3775cbbff7d948e066",
+  "metrics": {
+    "bimodality_abs_error": 0.019186448162433534,
+    "bimodality_generated": 0.4371664887470151,
+    "bimodality_reference": 0.4563529369094486,
+    "marginal_ks": 0.02777416536409205,
+    "metric_sample_cells_generated": 200000,
+    "metric_sample_cells_reference": 185530,
+    "metric_sample_fields_generated": 128,
+    "metric_sample_fields_reference": 10,
+    "schema_version": 1,
+    "spanning_fraction_abs_error": 0.3453125,
+    "spanning_fraction_generated": 0.4453125,
+    "spanning_fraction_reference": 0.1,
+    "variogram_x_nrmse": 0.23523335811412552,
+    "variogram_y_nrmse": 0.13560892298017974
+  },
+  "model_kind": "uno3d",
+  "roundtrip_relative_error": 0.0003761339175980538,
+  "sample_config_hash": "f690e8fca0575e033b9588e9cf6acdca00000565eda24fc21367a65e95cb508a",
+  "sample_count": 128,
+  "source_corr_len_cells_zyx": [
+    1.0,
+    4.0,
+    8.0
+  ],
+  "source_kind": "matern",
+  "strategy": "augmentation",
+  "training_config_hash": "a9abf91b670fb7a7657be87794e08a1e2f09fc5e77299366d7927dc406a1aa2c",
+  "training_shape_zyx": [
+    7,
+    60,
+    60
+  ]
+}

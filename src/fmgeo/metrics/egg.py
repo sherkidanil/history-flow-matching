@@ -10,6 +10,8 @@ from numpy.typing import ArrayLike, NDArray
 from scipy import ndimage, stats
 
 from fmgeo.metrics.geology import connected_component_sizes, experimental_variogram
+from fmgeo.metrics.misfit import normalized_data_misfit
+from fmgeo.metrics.uq import coverage, forecast_quantiles
 
 EggMetricValue = float | int
 GENERATOR_ACCEPTANCE_METRICS = (
@@ -165,6 +167,84 @@ def bimodality_coefficient(values: ArrayLike) -> float:
         return float("nan")
     skewness = float(stats.skew(samples, bias=False))
     return (skewness**2 + 1.0) / kurtosis
+
+
+def summarize_egg_stage(
+    fields: ArrayLike,
+    *,
+    simulated_data: ArrayLike,
+    observation: ArrayLike,
+    observation_covariance: ArrayLike,
+    fopt: ArrayLike,
+    truth_fopt: float,
+    active_mask: ArrayLike,
+    threshold: float,
+    wells: Mapping[str, Sequence[int]],
+    truth_connectivity: Mapping[tuple[str, str], float],
+) -> dict[str, float | bool]:
+    """Summarize one Egg assimilation stage with the declared project metrics."""
+
+    ensemble = np.asarray(fields, dtype=np.float64)
+    simulated = np.asarray(simulated_data, dtype=np.float64)
+    active = np.asarray(active_mask, dtype=bool)
+    forecasts = np.asarray(fopt, dtype=np.float64)
+    if ensemble.ndim != 4 or ensemble.shape[0] == 0:
+        raise ValueError("fields must be a non-empty ensemble-first 4D array")
+    if active.shape != ensemble.shape[1:] or not np.any(active):
+        raise ValueError("active_mask must match the non-empty spatial grid")
+    if simulated.ndim != 2 or simulated.shape[0] != len(ensemble):
+        raise ValueError("simulated_data must match the field ensemble")
+    if forecasts.shape != (len(ensemble),):
+        raise ValueError("fopt must contain one value per ensemble member")
+    if not np.isfinite(threshold) or not np.isfinite(truth_fopt):
+        raise ValueError("threshold and truth_fopt must be finite")
+
+    connectivity = egg_well_connectivity(ensemble, threshold=threshold, wells=wells)
+    if set(connectivity) != set(truth_connectivity):
+        raise ValueError("truth connectivity pairs must match the evaluated well pairs")
+    connectivity_mae = float(
+        np.mean(
+            [
+                abs(probability - truth_connectivity[pair])
+                for pair, probability in connectivity.items()
+            ]
+        )
+    )
+    cluster = egg_cluster_size_summary((ensemble >= threshold) & active[None, ...])
+    quantiles = forecast_quantiles(forecasts)
+    misfits = [
+        normalized_data_misfit(observation, member, observation_covariance)
+        for member in simulated
+    ]
+    return {
+        "mean_normalized_data_misfit": float(np.mean(misfits)),
+        "bimodality_coefficient": bimodality_coefficient(ensemble[:, active]),
+        "connectivity_mae_to_truth": connectivity_mae,
+        "largest_component_fraction_p50": float(
+            cluster["largest_component_fraction_p50"]
+        ),
+        "fopt_p10": quantiles["P10"],
+        "fopt_p50": quantiles["P50"],
+        "fopt_p90": quantiles["P90"],
+        "covered": coverage(
+            truth_fopt,
+            lower=quantiles["P10"],
+            upper=quantiles["P90"],
+        ),
+    }
+
+
+def closest_stage_to_target(
+    stage_misfits: Mapping[int, float], *, target: float
+) -> tuple[int, float]:
+    """Return the earliest stage with the smallest absolute gap to a target."""
+
+    if not stage_misfits:
+        raise ValueError("stage_misfits must contain at least one stage")
+    if not np.isfinite(target) or not all(np.isfinite(value) for value in stage_misfits.values()):
+        raise ValueError("target and stage misfits must be finite")
+    stage = min(stage_misfits, key=lambda index: (abs(stage_misfits[index] - target), index))
+    return int(stage), float(abs(stage_misfits[stage] - target))
 
 
 def egg_distribution_metrics(

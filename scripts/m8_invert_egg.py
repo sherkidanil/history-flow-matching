@@ -12,8 +12,7 @@ from typing import Literal
 
 import h5py  # type: ignore[import-untyped]
 import numpy as np
-import torch
-from m8_train_egg import load_fm_config
+from egg_flow_adapter import build_flow_adapter, embed_active
 
 from fmgeo.artifacts import (
     canonical_config_hash,
@@ -21,18 +20,22 @@ from fmgeo.artifacts import (
     sha256_file,
     update_manifest_atomic,
 )
-from fmgeo.forward.egg import extract_egg_observations, run_egg_forward
+from fmgeo.forward.egg import (
+    EGG_PRODUCERS,
+    extract_egg_observations,
+    parse_egg_well_locations,
+    run_egg_forward,
+)
+from fmgeo.inverse.diagnostics import ensemble_collapse_diagnostics
 from fmgeo.inverse.egg import (
     EggAssimilationStage,
+    EggInversionConfig,
     load_egg_inversion_config,
     run_egg_esmda,
 )
+from fmgeo.inverse.localization import well_observation_localization
 from fmgeo.metrics.uq import coverage, forecast_quantiles
-from fmgeo.param.flowmatching.models import build_velocity_model
-from fmgeo.param.flowmatching.sample import FlowTransform
-from fmgeo.param.flowmatching.train import LayerTrendNormalizer
 from fmgeo.param.pca import PCAParameterization
-from fmgeo.runtime import select_device
 
 Method = Literal["raw", "pca", "fm"]
 
@@ -46,77 +49,31 @@ def _resolve_parameterization_label(method: Method, label: str | None) -> str:
     return resolved
 
 
-def _embed_active(parameters: np.ndarray, active: np.ndarray) -> np.ndarray:
-    fields = np.zeros((len(parameters), *active.shape), dtype=np.float64)
-    fields[:, active] = parameters
-    return fields
-
-
-def _flow_adapter(
-    initial_fields: np.ndarray,
-    active: np.ndarray,
+def _remedy_name(
     *,
-    checkpoint_path: Path,
-    training_data: Path,
-    fm_config_path: Path,
-    strategy: str,
-    device_name: Literal["auto", "cpu", "mps", "cuda"],
-    batch_size: int,
-) -> tuple[
-    np.ndarray, Callable[[np.ndarray], np.ndarray], dict[str, object]
-]:
-    config = load_fm_config(fm_config_path)
-    config_hash = canonical_config_hash(config)
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-    if checkpoint["strategy"] != strategy or checkpoint["config_hash"] != config_hash:
-        raise ValueError("FM checkpoint strategy or configuration does not match")
-    if checkpoint["data_sha256"] != sha256_file(training_data):
-        raise ValueError("FM checkpoint training-data hash does not match")
-    selected = select_device(
-        device_name,
-        cuda_available=torch.cuda.is_available(),
-        mps_available=bool(torch.backends.mps.is_available()),
-    )
-    device = torch.device(selected)
-    model = build_velocity_model(config.model.model_dump(mode="python")).to(device)
-    model.load_state_dict(checkpoint["model"])
-    model.eval()
-    mask = torch.from_numpy(active)[None, None].to(device)
-    normalizer = LayerTrendNormalizer(
-        mean=checkpoint["normalizer_mean"], scale=checkpoint["normalizer_scale"]
-    )
-    transform = FlowTransform(
-        model, steps=config.integration.steps, method=config.integration.method, mask=mask
-    )
+    assimilation_count: int,
+    localization_enabled: bool,
+    fm_latent_pca: bool,
+) -> str:
+    enabled = sum((assimilation_count != 4, localization_enabled, fm_latent_pca))
+    if enabled > 1:
+        return "combined"
+    if localization_enabled:
+        return "spatial_localization"
+    if fm_latent_pca:
+        return "latent_pca"
+    if assimilation_count != 4:
+        return "assimilation_steps"
+    return "none"
 
-    def apply(values: np.ndarray, *, inverse: bool) -> np.ndarray:
-        batches: list[np.ndarray] = []
-        for start in range(0, len(values), batch_size):
-            tensor = torch.from_numpy(values[start : start + batch_size].astype(np.float32))
-            tensor = tensor[:, None].to(device)
-            if inverse:
-                tensor = normalizer.transform(tensor)
-                transformed = transform.inverse(tensor)
-            else:
-                transformed = transform.forward(tensor)
-                transformed = normalizer.inverse(transformed)
-            transformed = torch.where(mask, transformed, torch.zeros_like(transformed))
-            batches.append(transformed[:, 0].cpu().numpy().astype(np.float64))
-        return np.concatenate(batches)
 
-    latent_fields = apply(initial_fields, inverse=True)
-    initial_parameters = latent_fields[:, active]
-
-    def decode(parameters: np.ndarray) -> np.ndarray:
-        return apply(_embed_active(parameters, active), inverse=False)
-
-    metadata: dict[str, object] = {
-        "device": selected,
-        "fm_config_hash": config_hash,
-        "checkpoint_sha256": sha256_file(checkpoint_path),
-        "training_data_sha256": sha256_file(training_data),
-    }
-    return initial_parameters, decode, metadata
+def _validate_remedy(method: Method, config: EggInversionConfig) -> None:
+    if method == "pca" and config.localization.enabled:
+        raise ValueError("spatial localization is not applicable to PCA coefficients")
+    if method != "fm" and config.fm_latent_pca:
+        raise ValueError("FM latent PCA reduction requires method=fm")
+    if config.localization.enabled and config.fm_latent_pca:
+        raise ValueError("spatial localization is not defined for latent PCA coefficients")
 
 
 def _write_stage(handle: h5py.File, index: int, stage: EggAssimilationStage) -> None:
@@ -178,6 +135,7 @@ def main() -> int:
         raise ValueError("FM method requires fm-config, checkpoint, and training-data")
 
     config = load_egg_inversion_config(args.config)
+    _validate_remedy(method, config)
     with h5py.File(args.prior_fields) as handle:
         initial_fields = np.asarray(handle["logk"][: config.ensemble_size], dtype=np.float64)
         active = np.asarray(handle["active_mask"], dtype=bool)
@@ -188,7 +146,7 @@ def main() -> int:
     decode: Callable[[np.ndarray], np.ndarray]
     if method == "raw":
         initial_parameters = initial_fields[:, active]
-        decode = partial(_embed_active, active=active)
+        decode = partial(embed_active, active=active)
     elif method == "pca":
         pca = PCAParameterization.fit(
             initial_fields[:, active], variance_fraction=config.pca_variance_fraction
@@ -196,14 +154,14 @@ def main() -> int:
         initial_parameters = pca.encode(initial_fields[:, active])
 
         def decode(parameters: np.ndarray) -> np.ndarray:
-            return _embed_active(pca.decode(parameters), active)
+            return embed_active(pca.decode(parameters), active)
 
         parameterization = {
             "pca_rank": pca.rank,
             "pca_explained_variance_fraction": pca.explained_variance_fraction,
         }
     else:
-        initial_parameters, decode, parameterization = _flow_adapter(
+        initial_parameters, fm_decode, parameterization = build_flow_adapter(
             initial_fields,
             active,
             checkpoint_path=args.checkpoint,
@@ -213,6 +171,32 @@ def main() -> int:
             device_name=args.device,
             batch_size=args.batch_size,
         )
+        if config.fm_latent_pca:
+            field_pca = PCAParameterization.fit(
+                initial_fields[:, active],
+                variance_fraction=config.pca_variance_fraction,
+            )
+            latent_pca = PCAParameterization.fit(
+                initial_parameters,
+                variance_fraction=1.0,
+                max_rank=field_pca.rank,
+            )
+            initial_parameters = latent_pca.encode(initial_parameters)
+
+            def decode(parameters: np.ndarray) -> np.ndarray:
+                return fm_decode(latent_pca.decode(parameters))
+
+            parameterization.update(
+                {
+                    "latent_rank": latent_pca.rank,
+                    "latent_explained_variance_fraction": (
+                        latent_pca.explained_variance_fraction
+                    ),
+                    "matched_field_pca_rank": field_pca.rank,
+                }
+            )
+        else:
+            decode = fm_decode
 
     truth = extract_egg_observations(
         args.truth_case,
@@ -228,6 +212,21 @@ def main() -> int:
     observation_seed, assimilation_seed = np.random.SeedSequence(config.seed).spawn(2)
     observation = truth_data + np.random.default_rng(observation_seed).normal(scale=sigma)
     covariance = np.diag(sigma**2)
+    localization = None
+    if config.localization.enabled:
+        deck = (args.template_dir / "EGG.DATA").read_text(
+            encoding="utf-8", errors="replace"
+        )
+        well_locations = parse_egg_well_locations(deck)
+        localization = well_observation_localization(
+            active,
+            producer_locations_yx=tuple(well_locations[name] for name in EGG_PRODUCERS),
+            observation_times=int(
+                round(config.history_end_day / config.observation_interval_days)
+            ),
+            cell_size_yx_m=config.localization.cell_size_yx_m,
+            radius_m=config.localization.radius_m,
+        )
     evaluator = partial(
         run_egg_forward,
         template_dir=args.template_dir,
@@ -251,17 +250,32 @@ def main() -> int:
         "strategy": args.strategy,
         "prior_sha256": sha256_file(args.prior_fields),
         "simulator_id": args.simulator_id,
+        "localization": config.localization,
+        "fm_latent_pca": config.fm_latent_pca,
         **parameterization,
     }
     if args.parameterization_label is not None:
         provenance["parameterization_label"] = parameterization_label
     experiment_hash = canonical_config_hash(provenance)
+    latent_rank = parameterization.get("latent_rank")
+    if latent_rank is not None and not isinstance(latent_rank, int):
+        raise TypeError("latent rank metadata must be an integer")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with h5py.File(args.output, "w") as output:
         output.attrs["config_hash"] = experiment_hash
         output.attrs["method"] = method
         output.attrs["parameterization_label"] = parameterization_label
         output.attrs["strategy"] = args.strategy
+        output.attrs["remedy"] = _remedy_name(
+            assimilation_count=len(config.inflations),
+            localization_enabled=config.localization.enabled,
+            fm_latent_pca=config.fm_latent_pca,
+        )
+        output.attrs["localization_enabled"] = config.localization.enabled
+        output.attrs["localization_radius_m"] = (
+            config.localization.radius_m if config.localization.enabled else np.nan
+        )
+        output.attrs["latent_rank"] = 0 if latent_rank is None else latent_rank
         output.create_dataset("truth_data", data=truth_data.astype(np.float32))
         output.create_dataset("observation", data=observation.astype(np.float32))
         output.create_dataset("sigma", data=sigma.astype(np.float32))
@@ -275,8 +289,18 @@ def main() -> int:
             rng=np.random.default_rng(assimilation_seed),
             workers=config.workers,
             svd_energy=config.svd_energy,
+            localization=localization,
             on_stage=partial(_write_stage, output),
         )
+        prior_fields = stages[0].fields
+        for index, stage in enumerate(stages):
+            diagnostics = ensemble_collapse_diagnostics(
+                stage.fields,
+                prior_fields=prior_fields,
+                active=active,
+            )
+            for name, value in diagnostics.items():
+                output[f"stage_{index}"].attrs[name] = value
 
     truth_fopt = float(truth["FOPT_16.5y"])
     stage_reports: list[dict[str, object]] = []
@@ -299,6 +323,11 @@ def main() -> int:
                 "mean_normalized_data_misfit": float(np.mean(misfits)),
                 "cache_hits": int(stage.forward.cache_hit.sum()),
                 "runtime_seconds_sum": float(stage.forward.runtime_seconds.sum()),
+                **ensemble_collapse_diagnostics(
+                    stage.fields,
+                    prior_fields=stages[0].fields,
+                    active=active,
+                ),
             }
         )
 
@@ -326,6 +355,17 @@ def main() -> int:
         "observation_count": len(observation),
         "observation_noise_seed": observation_seed.entropy,
         "parameterization": parameterization,
+        "remedy": _remedy_name(
+            assimilation_count=len(config.inflations),
+            localization_enabled=config.localization.enabled,
+            fm_latent_pca=config.fm_latent_pca,
+        ),
+        "n_assimilations": len(config.inflations),
+        "localization_enabled": config.localization.enabled,
+        "localization_radius_m": (
+            config.localization.radius_m if config.localization.enabled else None
+        ),
+        "latent_rank": latent_rank,
         "n_sim": sum(len(stage.fields) for stage in stages),
         "n_failed": sum(int(np.sum(stage.forward.status != "ok")) for stage in stages),
         "stages": stage_reports,

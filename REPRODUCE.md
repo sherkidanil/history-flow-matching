@@ -192,6 +192,110 @@ uv run python scripts/m8_plot_egg_inversion.py \
   --water-cut-pdf-output results/figures/egg_water_cut_forecast.pdf
 ```
 
+Derive the zero-simulation stagewise and matched-misfit geology control from the
+same immutable inversion artifacts:
+
+```bash
+uv run python scripts/f1_stagewise_geology.py \
+  --config configs/egg/inversion.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
+  --inversion artifacts/egg_inversion_augmentation_raw.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm.h5 \
+  --inversion-report results/raw/egg_inversion_augmentation_raw.json \
+  --inversion-report results/raw/egg_inversion_augmentation_pca.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm.json \
+  --stagewise-output results/tables/egg_stagewise.csv \
+  --matched-output results/tables/egg_matched_misfit.csv \
+  --figure-output results/figures/egg_misfit_geology_tradeoff.svg \
+  --pdf-output results/figures/egg_misfit_geology_tradeoff.pdf
+```
+
+This diagnostic compares the completed FM inversion with the closest existing
+raw and PCA ES-MDA stages. An intermediate stage is not equivalent to a
+completed run with fewer assimilations; the table records that limitation.
+
+Before applying any inversion remedy, measure stage-0 linear response, decoder
+midpoint nonlinearity on 200 fixed member pairs, and every FM latent-to-field
+update shift:
+
+```bash
+uv run python scripts/f2_linearity_diagnostics.py \
+  --config configs/egg/inversion.yaml \
+  --fm-config configs/egg/fm_train.yaml \
+  --checkpoint artifacts/egg_models/augmentation/ema.pt \
+  --training-data artifacts/egg_augmentation_5000.h5 \
+  --prior-fields artifacts/egg_fm_samples_augmentation_1000.h5 \
+  --inversion artifacts/egg_inversion_augmentation_raw.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm.h5 \
+  --pair-count 200 \
+  --pair-seed 20260915 \
+  --device auto \
+  --output-table results/tables/f2_linearity.csv \
+  --output-json results/raw/f2_linearity.json
+```
+
+This command performs neural-network inference but no OPM simulations.
+
+Run remedy A with eight equal ES-MDA steps for all three parameterizations.
+The raw and PCA runs are mandatory controls; they use the same observations,
+seed, initial ensemble, and simulator cache as FM.
+
+```bash
+for METHOD in raw pca fm; do
+  FM_ARGS=()
+  if [ "$METHOD" = fm ]; then
+    FM_ARGS=(
+      --fm-config configs/egg/fm_train.yaml
+      --checkpoint artifacts/egg_models/augmentation/ema.pt
+      --training-data artifacts/egg_augmentation_5000.h5
+    )
+  fi
+  uv run python scripts/m8_invert_egg.py \
+    --method "$METHOD" --parameterization-label "${METHOD}_na8" \
+    --strategy augmentation \
+    --config configs/egg/inversion_na8.yaml \
+    "${FM_ARGS[@]}" \
+    --prior-fields artifacts/egg_fm_samples_augmentation_1000.h5 \
+    --truth-case scratch/egg_truth_perm100/EGG \
+    --template-dir scratch/egg_truth_perm100 \
+    --flow-command scripts/flow_docker.sh \
+    --simulator-id 'OPM Flow 2026.04 / openporousmedia/opmreleases:latest' \
+    --work-root "/path/on/docker/filesystem/fmgeo/egg_work_na8_${METHOD}" \
+    --cache-dir scratch/egg_cache \
+    --output "artifacts/egg_inversion_augmentation_${METHOD}_na8.h5" \
+    --manifest "artifacts/f2_na8_${METHOD}_manifest.json" \
+    --report "results/raw/egg_inversion_augmentation_${METHOD}_na8.json" \
+    --device auto
+done
+
+uv run python scripts/f2_build_remedies.py \
+  --config configs/egg/inversion_na8.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
+  --inversion artifacts/egg_inversion_augmentation_raw_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion-report results/raw/egg_inversion_augmentation_raw_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_pca_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8.json \
+  --output results/tables/f2_remedies.csv
+```
+
+The `N_a=16` gate was fixed before inspecting the eight-step result: run it
+only if FM `N_a=8` has no failed members and reduces the original final mean
+normalized misfit (`61.92531`) by at least 25%, i.e. to at most `46.44398`.
+Spatial-localization and matched-rank latent-PCA configurations are recorded in
+`configs/egg/inversion_localized.yaml` and
+`configs/egg/inversion_fm_latent_pca.yaml`; they are implemented controls, not
+results until their corresponding artifacts are produced.
+
 ## Matérn source ablation
 
 Train the three strictly controlled source variants. Each run retains only EMA

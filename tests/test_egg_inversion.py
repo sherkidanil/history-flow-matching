@@ -15,7 +15,9 @@ from fmgeo.inverse.egg import (
 
 repository = Path(__file__).parents[1]
 sys.path.insert(0, str(repository / "scripts"))
+from egg_flow_adapter import compatible_fm_config_hashes, embed_active  # noqa: E402
 from m8_invert_egg import _resolve_parameterization_label  # noqa: E402
+from m8_train_egg import load_fm_config  # noqa: E402
 
 sys.path.pop(0)
 
@@ -63,6 +65,28 @@ def test_parameterization_label_defaults_to_method_and_accepts_fm_variant() -> N
 def test_parameterization_label_rejects_empty_value() -> None:
     with pytest.raises(ValueError, match="non-empty"):
         _resolve_parameterization_label("fm", "  ")
+
+
+def test_embed_active_preserves_parameter_order() -> None:
+    active = np.array([[[True, False], [False, True]]])
+    parameters = np.array([[1.0, 2.0], [3.0, 4.0]])
+
+    fields = embed_active(parameters, active)
+
+    np.testing.assert_array_equal(fields[:, active], parameters)
+    assert np.count_nonzero(fields[:, ~active]) == 0
+
+
+def test_fm_config_hashes_accept_original_yaml_before_schema_defaults() -> None:
+    path = repository / "configs/egg/fm_train.yaml"
+    config = load_fm_config(path)
+
+    hashes = compatible_fm_config_hashes(path, config)
+
+    assert hashes == (
+        "2d1906d3a78e95237327fae58081c006e94695bcd9b709c3b1659a87287ddb46",
+        "d03877080a35c554b49c2208039db0f87146f7fab48cb6a1c1a3b08753a31a05",
+    )
 
 
 def test_egg_inversion_config_rejects_invalid_inflations(tmp_path: Path) -> None:

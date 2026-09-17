@@ -17,4 +17,9 @@ def test_vector_figure_writer_is_deterministic_for_svg_and_pdf(tmp_path: Path) -
         save_vector_figure(figure, output, creator="test")
         assert output.read_bytes() == first
         assert first.startswith(magic)
+        if suffix == "svg":
+            assert all(
+                line == line.rstrip()
+                for line in first.decode("utf-8").splitlines()
+            )
     plt.close(figure)

@@ -23,12 +23,20 @@ class PCAParameterization:
         return self.components.shape[0]
 
     @classmethod
-    def fit(cls, ensemble: ArrayLike, *, variance_fraction: float = 0.95) -> Self:
+    def fit(
+        cls,
+        ensemble: ArrayLike,
+        *,
+        variance_fraction: float = 0.95,
+        max_rank: int | None = None,
+    ) -> Self:
         values = np.asarray(ensemble, dtype=np.float64)
         if values.ndim < 2 or values.shape[0] < 2:
             raise ValueError("ensemble must contain at least two samples")
         if not 0.0 < variance_fraction <= 1.0:
             raise ValueError("variance_fraction must be in (0, 1]")
+        if max_rank is not None and max_rank < 1:
+            raise ValueError("max_rank must be positive")
         sample_shape = values.shape[1:]
         flattened = values.reshape(values.shape[0], -1)
         mean = flattened.mean(axis=0)
@@ -43,6 +51,8 @@ class PCAParameterization:
             int(np.searchsorted(cumulative, variance_fraction, side="left")) + 1,
             numerical_rank,
         )
+        if max_rank is not None:
+            rank = min(rank, max_rank)
         return cls(
             mean=mean,
             components=np.asarray(right_vectors[:rank], dtype=np.float64),

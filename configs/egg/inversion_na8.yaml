@@ -1,0 +1,27 @@
+# Remedy A: same 100-member Egg protocol with eight equal ES-MDA steps.
+seed: 20260915
+truth_realization: 100
+ensemble_size: 100
+inflations: [8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0]
+svd_energy: 0.999
+pca_variance_fraction: 0.95
+
+history_end_day: 1800.0
+forecast_end_day: 3600.0
+observation_interval_days: 90.0
+oil_rate_relative_sigma: 0.05
+water_rate_relative_sigma: 0.05
+rate_sigma_floor: 1.0
+water_breakthrough_fraction: 0.05
+high_permeability_quantile: 0.65
+
+localization:
+  enabled: false
+  kind: gaspari_cohn
+  radius_m: 64.0
+  cell_size_yx_m: [8.0, 8.0]
+fm_latent_pca: false
+
+workers: 16
+timeout_seconds: 300.0
+min_free_disk_gb: 20.0

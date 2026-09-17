@@ -1,0 +1,103 @@
+{
+  "artifact": {
+    "config_hash": "3d1913be60ecb559066f40ff871ee93b25189becedf40031251cbfac6c356abb",
+    "created_at": "2026-09-16T06:55:38.364164Z",
+    "dtype": "float32",
+    "git_commit": "bfca719f69f4452752c65fe32adc3537e80ed4ad",
+    "path": "artifacts/egg_inversion_ablation_white_fm.h5",
+    "sha256": "31b3c92471d70e6f7fc4f677bf3339a5f10d984b14c906be3731184a5ca27d2c",
+    "shape": [
+      5,
+      100,
+      7,
+      60,
+      60
+    ],
+    "size_bytes": 72692206
+  },
+  "benchmark": "Egg",
+  "config_hash": "3d1913be60ecb559066f40ff871ee93b25189becedf40031251cbfac6c356abb",
+  "method": "fm",
+  "n_failed": 0,
+  "n_sim": 500,
+  "observation_count": 160,
+  "observation_noise_seed": 20260915,
+  "parameterization": {
+    "checkpoint_sha256": "357217759522a3fd00e230f26e4994dfe0df2f23c05dfca77c7e502e46e1fa52",
+    "device": "cuda",
+    "fm_config_hash": "edea6efc50ed4bb71fca69c1a18f87120da1fe10af01920ea9394736fbcbe1b4",
+    "training_data_sha256": "e03ae3a9bfc338b0c972ed4d2a7b4e9e2dfa7cc4c9c80f6223a125386797a4b7"
+  },
+  "parameterization_label": "white",
+  "prior_sha256": "eff49cf09c0794d4c1d510811820345ae2c1a5fcb8e575c57d7cc7abe563dd48",
+  "stages": [
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 495562.88125,
+        "P50": 501362.234375,
+        "P90": 506719.3,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 140.02385328660293,
+      "runtime_seconds_sum": 3699.046602450311,
+      "stage": 0
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 496827.984375,
+        "P50": 503022.703125,
+        "P90": 508142.396875,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 40.95344794280528,
+      "runtime_seconds_sum": 3694.4947435483336,
+      "stage": 1
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 499191.546875,
+        "P50": 502536.21875,
+        "P90": 506636.2,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 31.241050999889886,
+      "runtime_seconds_sum": 3694.8985172882676,
+      "stage": 2
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 499429.740625,
+        "P50": 503192.953125,
+        "P90": 506480.33125,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 20.043020520006813,
+      "runtime_seconds_sum": 3702.327634572983,
+      "stage": 3
+    },
+    {
+      "cache_hits": 0,
+      "fopt": {
+        "P10": 502290.84375,
+        "P50": 504827.625,
+        "P90": 506684.65625,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_normalized_data_misfit": 12.91602433069577,
+      "runtime_seconds_sum": 3701.376533664763,
+      "stage": 4
+    }
+  ],
+  "strategy": "augmentation",
+  "truth_case": "scratch/egg_truth_perm100/EGG",
+  "truth_terminal_fopt": 505246.84375
+}
