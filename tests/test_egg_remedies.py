@@ -116,3 +116,14 @@ def test_remedy_metadata_and_pca_localization_guard() -> None:
     )
     with pytest.raises(ValueError, match="not applicable"):
         _validate_remedy("pca", localized)
+
+
+def test_na8_ensemble200_config_changes_only_ensemble_size() -> None:
+    baseline = load_egg_inversion_config(repository / "configs/egg/inversion_na8.yaml")
+    enlarged = load_egg_inversion_config(
+        repository / "configs/egg/inversion_na8_ensemble200.yaml"
+    )
+
+    assert enlarged.ensemble_size == 200
+    assert baseline.ensemble_size == 100
+    assert enlarged.model_copy(update={"ensemble_size": 100}) == baseline
