@@ -1,0 +1,191 @@
+{
+  "artifact": {
+    "config_hash": "0367e6990f9c8feec5c24a23d6318c5b403e747d96f9d60b6df82812c32493b6",
+    "created_at": "2026-09-17T11:07:12.360792Z",
+    "dtype": "float32",
+    "git_commit": "b5c168233b35894805984fa737d7c9cc86758d6a",
+    "path": "artifacts/egg_inversion_augmentation_fm_na8_n200.h5",
+    "sha256": "1d5a667962a4698b3e78b2e13871f6a15ef38f4376b263f07aaec673ae7202ae",
+    "shape": [
+      9,
+      200,
+      7,
+      60,
+      60
+    ],
+    "size_bytes": 261271512
+  },
+  "benchmark": "Egg",
+  "config_hash": "0367e6990f9c8feec5c24a23d6318c5b403e747d96f9d60b6df82812c32493b6",
+  "latent_rank": null,
+  "localization_enabled": false,
+  "localization_radius_m": null,
+  "method": "fm",
+  "n_assimilations": 8,
+  "n_failed": 0,
+  "n_sim": 1800,
+  "observation_count": 160,
+  "observation_noise_seed": 20260915,
+  "parameterization": {
+    "checkpoint_sha256": "fce38ca803c9c671a852bc7c1d2fdd7a1ff0b7437f2a4bd23395f3f852016783",
+    "device": "cpu",
+    "fm_config_accepted_hashes": [
+      "2d1906d3a78e95237327fae58081c006e94695bcd9b709c3b1659a87287ddb46",
+      "d03877080a35c554b49c2208039db0f87146f7fab48cb6a1c1a3b08753a31a05"
+    ],
+    "fm_config_hash": "2d1906d3a78e95237327fae58081c006e94695bcd9b709c3b1659a87287ddb46",
+    "training_data_sha256": "e03ae3a9bfc338b0c972ed4d2a7b4e9e2dfa7cc4c9c80f6223a125386797a4b7"
+  },
+  "parameterization_label": "fm_na8_n200",
+  "prior_sha256": "eff49cf09c0794d4c1d510811820345ae2c1a5fcb8e575c57d7cc7abe563dd48",
+  "remedy": "assimilation_steps",
+  "stages": [
+    {
+      "cache_hits": 96,
+      "effective_ensemble_members": 110.39731997796659,
+      "fopt": {
+        "P10": 495160.134375,
+        "P50": 501650.515625,
+        "P90": 507473.15,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.7584199097848855,
+      "mean_normalized_data_misfit": 140.59462264354394,
+      "relative_field_shift_from_prior": 0.0,
+      "runtime_seconds_sum": 10644.063203498721,
+      "stage": 0
+    },
+    {
+      "cache_hits": 0,
+      "effective_ensemble_members": 103.88293373669146,
+      "fopt": {
+        "P10": 496804.421875,
+        "P50": 501938.0,
+        "P90": 507835.684375,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.7378422103533391,
+      "mean_normalized_data_misfit": 77.4189250609271,
+      "relative_field_shift_from_prior": 0.08974562852429627,
+      "runtime_seconds_sum": 7277.511858634651,
+      "stage": 1
+    },
+    {
+      "cache_hits": 0,
+      "effective_ensemble_members": 95.23031031525086,
+      "fopt": {
+        "P10": 497720.8,
+        "P50": 503005.84375,
+        "P90": 507578.640625,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.7170255639350478,
+      "mean_normalized_data_misfit": 77.68879586442728,
+      "relative_field_shift_from_prior": 0.10703300883857765,
+      "runtime_seconds_sum": 7292.312147125602,
+      "stage": 2
+    },
+    {
+      "cache_hits": 0,
+      "effective_ensemble_members": 87.40512077523603,
+      "fopt": {
+        "P10": 497614.778125,
+        "P50": 503178.125,
+        "P90": 507992.915625,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.6934522171346927,
+      "mean_normalized_data_misfit": 64.96499017676445,
+      "relative_field_shift_from_prior": 0.11597426566755616,
+      "runtime_seconds_sum": 7297.739328093827,
+      "stage": 3
+    },
+    {
+      "cache_hits": 0,
+      "effective_ensemble_members": 81.11024511822515,
+      "fopt": {
+        "P10": 497639.63125,
+        "P50": 503760.921875,
+        "P90": 507742.521875,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.6675303390148201,
+      "mean_normalized_data_misfit": 70.14493927065512,
+      "relative_field_shift_from_prior": 0.12403183884717914,
+      "runtime_seconds_sum": 7249.886986173689,
+      "stage": 4
+    },
+    {
+      "cache_hits": 0,
+      "effective_ensemble_members": 74.49578704722815,
+      "fopt": {
+        "P10": 498271.059375,
+        "P50": 503669.828125,
+        "P90": 507740.775,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.6436717922059003,
+      "mean_normalized_data_misfit": 60.31166469032391,
+      "relative_field_shift_from_prior": 0.12931691038531107,
+      "runtime_seconds_sum": 7265.517407074571,
+      "stage": 5
+    },
+    {
+      "cache_hits": 0,
+      "effective_ensemble_members": 71.67573698392368,
+      "fopt": {
+        "P10": 499003.2375,
+        "P50": 503661.59375,
+        "P90": 507889.65625,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.6179602006278203,
+      "mean_normalized_data_misfit": 70.73685656410451,
+      "relative_field_shift_from_prior": 0.1342869810539781,
+      "runtime_seconds_sum": 7271.460712619126,
+      "stage": 6
+    },
+    {
+      "cache_hits": 0,
+      "effective_ensemble_members": 65.9871297116088,
+      "fopt": {
+        "P10": 500731.003125,
+        "P50": 504341.9375,
+        "P90": 507903.025,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.5842484943069486,
+      "mean_normalized_data_misfit": 40.228360161622994,
+      "relative_field_shift_from_prior": 0.13780882715707635,
+      "runtime_seconds_sum": 7277.347446911037,
+      "stage": 7
+    },
+    {
+      "cache_hits": 0,
+      "effective_ensemble_members": 64.63236224344507,
+      "fopt": {
+        "P10": 499284.821875,
+        "P50": 504080.6875,
+        "P90": 507171.80625,
+        "covered": true,
+        "truth": 505246.84375
+      },
+      "mean_field_spread": 0.5598896683633597,
+      "mean_normalized_data_misfit": 32.107386446048714,
+      "relative_field_shift_from_prior": 0.1411957067773516,
+      "runtime_seconds_sum": 7275.158588498831,
+      "stage": 8
+    }
+  ],
+  "strategy": "augmentation",
+  "truth_case": "scratch/egg_truth_perm100/EGG",
+  "truth_terminal_fopt": 505246.84375
+}
