@@ -115,6 +115,9 @@ existing stage grid cannot separate geological preservation from FM
 under-assimilation, and no equal-misfit advantage is claimed from this control.
 The complete trajectories and explicit diagnostic limitation are in
 `results/tables/egg_stagewise.csv` and `results/tables/egg_matched_misfit.csv`.
+The assimilation-step remedy below resolves this particular comparison gap
+with new raw, PCA, and FM trajectories whose stages bracket the improved FM
+misfit; it does not retroactively make the original four-step comparison fair.
 
 The ensemble-score view gives the same ranking. Raw/PCA/FM FOPT CRPS values
 are 217.80/286.25/3,518.04 m3, and their P10–P90 widths are
@@ -147,19 +150,94 @@ does not determine the update rank; for every parameterization the ES-MDA
 update lies in an anomaly subspace of rank at most `N - 1 = 99`.
 
 The stage-0 in-sample truncated-SVD regression gives `R²_lin = 1.0000` for raw,
-`0.98830` for PCA, and `1.0000` for FM. The expected low FM linear-response
-score is therefore not observed. Because raw and FM retain all 99 available
-anomaly directions, the perfect in-sample scores can reflect interpolation and
-must not be read as proof that the composed FM forward map is linear. A direct
-decoder test does find nonlinearity: over 200 fixed member pairs, FM midpoint
-errors have P10/P50/P90 `0.07577 / 0.08427 / 0.09331`, versus exactly zero for
-raw and below `1.62e-8` for PCA. Across the four original FM updates, relative
-latent shifts decline from 0.73244 to 0.45606, but field shifts are only
-0.11565 to 0.09029; the field-to-latent ratios are 0.15789–0.19798. Thus
-decoder attenuation is measured, but the present diagnostics do not by
-themselves prove that it caused the final high misfit. The complete values and
-hashes are in `results/tables/f2_linearity.csv` and
+`0.98830` for PCA, and `1.0000` for FM. These values are degenerate as a
+linearity diagnostic: raw and FM retain all 99 available anomaly directions,
+so the same ensemble used to fit and score the regression can be interpolated.
+A deterministic five-fold test instead fits on 80 members and predicts 20
+held-out members. Its stage-0 `R²_oos` mean and fold standard deviation are
+`0.3093 ± 0.0414` for raw, `0.3066 ± 0.0589` for PCA, and
+`-0.4889 ± 0.2309` for FM. The negative FM value means that the fitted linear
+map predicts held-out responses worse than the training-fold response mean;
+this supports substantially poorer local linear transfer for the composed FM
+map at the prior. At the final stage all three values are negative
+(`-2.8843`, `-1.9936`, and `-2.1300`), so final-ensemble nonlinearity is not
+specific to FM.
+
+A separate decoder test reaches a compatible but narrower result: over 200
+fixed member pairs, FM midpoint errors have P10/P50/P90
+`0.07577 / 0.08427 / 0.09332`, versus exactly zero for raw and below
+`1.62e-8` for PCA. Across the four original FM updates, relative latent shifts
+decline from 0.73244 to 0.45606, but field shifts are only 0.11565 to 0.09029;
+the field-to-latent ratios are 0.15789–0.19798. The out-of-sample result and
+decoder attenuation establish nonlinearity and compression, but do not alone
+prove that either caused the final high misfit. Complete fold scores, old
+in-sample values, and hashes remain in `results/tables/f2_linearity.csv` and
 `results/raw/f2_linearity.json`.
+
+## Assimilation-step remedy
+
+Eight equal ES-MDA steps improve every parameterization without changing the
+truth, observations, prior, or noise seed. The gain is highly non-uniform. FM
+falls from a four-step misfit of 61.92531 to 6.62827, a 9.34-fold reduction;
+raw falls from 2.00665 to 1.57134 (21.7%), and PCA from 1.88520 to 1.48103
+(21.4%). Sixteen steps and a 200-member FM ensemble do not improve further.
+All runs completed without failed simulations:
+
+| Variant | N_a | N | Localization | Latent rank | Simulations | Failures | Final misfit | Field spread | Prior-relative field shift | Effective members |
+|---|---:|---:|:---:|---:|---:|---:|---:|---:|---:|---:|
+| Raw N_a=8 | 8 | 100 | no | — | 900 | 0 | 1.57134 | 0.39222 | 0.13154 | 36.71 |
+| PCA N_a=8 | 8 | 100 | no | — | 900 | 0 | 1.48103 | 0.37643 | 0.12975 | 34.20 |
+| FM N_a=8 | 8 | 100 | no | — | 900 | 0 | 6.62827 | 0.37770 | 0.15249 | 27.83 |
+| FM N_a=16 | 16 | 100 | no | — | 1,700 | 0 | 20.78570 | 0.32378 | 0.15426 | 22.43 |
+| FM N_a=8, N=200 | 8 | 200 | no | — | 1,800 | 0 | 32.10739 | 0.55989 | 0.14120 | 64.63 |
+
+| Variant | FOPT P10 | FOPT P50 | FOPT P90 | Covers truth | FOPT CRPS | Normalized energy | Connectivity MAE | Bimodality | Largest-component P50 |
+|---|---:|---:|---:|:---:|---:|---:|---:|---:|---:|
+| Raw N_a=8 | 504,573.80 | 505,468.00 | 506,416.41 | yes | 214.23 | 5.7630 | 0.13719 | 0.31735 | 0.59646 |
+| PCA N_a=8 | 503,644.91 | 504,499.23 | 505,326.43 | yes | 487.13 | 5.8189 | 0.12563 | 0.31975 | 0.51045 |
+| FM N_a=8 | 503,483.88 | 505,804.69 | 508,290.79 | yes | 548.09 | 10.0060 | 0.12938 | 0.49293 | 0.49019 |
+| FM N_a=16 | 501,638.82 | 505,392.39 | 507,816.81 | yes | 686.66 | 19.7246 | 0.11906 | 0.47737 | 0.49021 |
+| FM N_a=8, N=200 | 499,284.82 | 504,080.69 | 507,171.81 | yes | 940.47 | 22.1642 | 0.16328 | 0.49072 | 0.68506 |
+
+The complete 33-column table, including artifact/report hashes and run commits,
+is `results/tables/f2_remedies.csv`; all 53 stages are in
+`results/tables/egg_stagewise_remedies.csv`.
+
+The improved FM run finally permits a non-interpolated matched-misfit geology
+comparison. At misfit 6.62827 its bimodality coefficient is 0.49293. The two
+bracketing raw stages have misfits 12.37065 and 5.29334 with bimodality
+0.35300 and 0.32838; the PCA brackets are 12.07456 and 5.05434 with
+bimodality 0.34409 and 0.32321. FM is therefore substantially more bimodal on
+both sides of the target, and this preservation can no longer be explained by
+under-assimilation alone. Its connectivity MAE, 0.12938, is also lower than
+the nearer lower-misfit raw/PCA values 0.13781/0.13688. The advantage is not
+universal: FM's median largest-component fraction is 0.49019, below raw/PCA
+at the nearer lower-misfit stages (0.52459/0.51195) and far below the truth
+0.92273. The exact five comparison rows are in
+`results/tables/egg_matched_misfit_v2.csv`.
+
+Thus G1 changes the earlier negative conclusion to a metric-specific positive
+result: FM preserves permeability bimodality and competitive connectivity at
+comparable history-match quality, but not the largest connected component.
+It also does not close the data-fit gap: 6.62827 remains 4.22 times the raw
+misfit and 4.48 times the PCA misfit after eight steps. The full trajectories
+are shown in `results/figures/egg_misfit_geology_tradeoff.svg` and its
+deterministic vector PDF counterpart.
+
+The anomalous resource controls are configuration-clean. All four FM runs use
+the same prior, truth, observation seed, checkpoint, and FM configuration; all
+inflation schedules satisfy `sum(1/alpha_i)=1`. The first 96 members of the
+200-member run match the 100-member run exactly. Only members 96--99 differ at
+the final inference-batch boundary, with stage-0 field relative Frobenius
+difference `5.71e-8`. Prior-relative field distance saturates near 0.15 in all
+runs. In `fm_na16`, misfit oscillation after stage 9 coincides with effective
+membership falling from 33.96 to 22.43 and covariance-system conditioning
+rebounding, consistent with noisy updates after decoder-limited displacement.
+This is an association, not a causal proof. The N=200 anomaly remains open:
+it retains 64.63 effective members and 0.770 ensemble-explained normalized
+data variance, yet ends worse than N=100. The 40 stagewise diagnostic rows are
+in `results/tables/g2_anomaly_diagnostics.csv`, and the unresolved inference is
+recorded in `BLOCKERS.md`.
 
 ## Matérn source ablation (source-quality stage)
 
@@ -244,9 +322,15 @@ geological diagnostics. The complete 12-row matrix is
   fixed resolution is rejected by both the controlled U-Net sample-quality
   matrix and the overall inversion/forecast scores; fitted Matérn improves
   only the selected connectivity diagnostic.
-- The original augmentation FM inversion has much worse data fit and FOPT
-  calibration than raw and PCA. Its nearly prior-like bimodality cannot be
-  interpreted as preservation at equal history-match quality.
+- The original four-step FM inversion has much worse data fit and FOPT
+  calibration than raw and PCA. The eight-step control establishes a real
+  matched-misfit advantage for bimodality and connectivity, but not for the
+  largest connected component, and its final misfit remains more than four
+  times both baselines.
+- More assimilation steps and a larger ensemble are not monotonically better:
+  `fm_na16` and `fm_na8_n200` finish worse than `fm_na8`. Saturation and
+  collapse are consistent with the late `N_a=16` oscillations, but the
+  200-member anomaly is unexplained and must not be generalized.
 - No first-session inversion used localization despite 18,553 parameters and
   only 100 ensemble members. The raw baseline may therefore overfit spurious
   long-range correlations; its very low misfit and narrow forecast interval
@@ -266,9 +350,17 @@ geological diagnostics. The complete 12-row matrix is
 
 ## What next
 
-First resolve the PUNQ schedule/aquifer discrepancy against a trustworthy deck
-and rerun the coverage gate. For Egg, repeat held-out inversion across several
-truths and noise seeds, then investigate why the fitted Matérn U-Net has lower
-training loss but worse fixed-grid samples. For resolution transfer, tune UNO
-capacity and spectral modes under a validation-only budget and test whether
-the Matérn advantage persists for connectivity-aware objectives.
+The immediate Egg control is the predeclared `N_a=8` localization matrix: raw
+and FM with the fixed 64 m Gaspari--Cohn radius, plus the unlocalized
+200-member raw control and explicitly unlocalized PCA. This tests whether the
+matched-misfit FM advantage survives a treatment designed to suppress
+spurious long-range covariance. It must be completed before treating the
+present positive result as robust.
+
+Next, repeat selected `N_a=8` comparisons over multiple assimilation seeds,
+observation-noise seeds, and held-out truths. A replicated ensemble-size study
+is needed to distinguish the unexplained N=200 trajectory from a systematic
+effect. Only then should decoder architecture or latent-rank remedies be
+tuned. In parallel, PUNQ remains gated on reproducing the published truth
+forecast with an explicit OPM-compatible well-cutback schedule. Source and
+cross-resolution extensions are secondary to these inversion-validity checks.

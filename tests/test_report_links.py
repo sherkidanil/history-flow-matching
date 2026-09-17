@@ -54,3 +54,17 @@ def test_raw_json_is_public_but_heavy_raw_data_remains_ignored() -> None:
 
     assert json_result.returncode == 1
     assert h5_result.returncode == 0
+
+
+def test_report_publishes_session3_remedy_evidence() -> None:
+    report = Path("REPORT.md").read_text(encoding="utf-8")
+
+    assert "## Assimilation-step remedy" in report
+    for reference in (
+        "results/tables/f2_remedies.csv",
+        "results/tables/egg_stagewise_remedies.csv",
+        "results/tables/egg_matched_misfit_v2.csv",
+        "results/tables/g2_anomaly_diagnostics.csv",
+        "results/figures/egg_misfit_geology_tradeoff.svg",
+    ):
+        assert reference in report

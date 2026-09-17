@@ -234,6 +234,8 @@ uv run python scripts/f2_linearity_diagnostics.py \
   --inversion artifacts/egg_inversion_augmentation_fm.h5 \
   --pair-count 200 \
   --pair-seed 20260915 \
+  --n-folds 5 \
+  --fold-seed 20260915 \
   --device auto \
   --output-table results/tables/f2_linearity.csv \
   --output-json results/raw/f2_linearity.json
@@ -282,10 +284,59 @@ uv run python scripts/f2_build_remedies.py \
   --inversion artifacts/egg_inversion_augmentation_raw_na8.h5 \
   --inversion artifacts/egg_inversion_augmentation_pca_na8.h5 \
   --inversion artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na16.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8_n200.h5 \
   --inversion-report results/raw/egg_inversion_augmentation_raw_na8.json \
   --inversion-report results/raw/egg_inversion_augmentation_pca_na8.json \
   --inversion-report results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na16.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8_n200.json \
   --output results/tables/f2_remedies.csv
+```
+
+Build the remedy-stage geology table, the bracketing matched-misfit control,
+and the central deterministic vector figure from the same five artifacts:
+
+```bash
+uv run python scripts/f1_stagewise_geology.py \
+  --config configs/egg/inversion_na8.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
+  --inversion artifacts/egg_inversion_augmentation_raw_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na16.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8_n200.h5 \
+  --inversion-report results/raw/egg_inversion_augmentation_raw_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_pca_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na16.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8_n200.json \
+  --stagewise-output results/tables/egg_stagewise_remedies.csv \
+  --matched-output results/tables/egg_matched_misfit_v2.csv \
+  --figure-output results/figures/egg_misfit_geology_tradeoff.svg \
+  --pdf-output results/figures/egg_misfit_geology_tradeoff.pdf
+```
+
+Reproduce the configuration audit and all 40 stagewise G2 diagnostics:
+
+```bash
+uv run python scripts/g2_anomaly_diagnostics.py \
+  --inversion artifacts/egg_inversion_augmentation_fm.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na16.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8_n200.h5 \
+  --inversion-report results/raw/egg_inversion_augmentation_fm.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na16.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8_n200.json \
+  --config-map fm=configs/egg/inversion.yaml \
+  --config-map fm_na8=configs/egg/inversion_na8.yaml \
+  --config-map fm_na16=configs/egg/inversion_na16.yaml \
+  --config-map fm_na8_n200=configs/egg/inversion_na8_ensemble200.yaml \
+  --output results/tables/g2_anomaly_diagnostics.csv
 ```
 
 The `N_a=16` gate was fixed before inspecting the eight-step result: run it

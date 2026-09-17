@@ -29,7 +29,10 @@ GitHub-viewable SVG files and matching vector PDFs.
 
 [![Egg posterior comparison](results/figures/egg_posterior_comparison.svg)](results/figures/egg_posterior_comparison.pdf)
 
+[![Egg misfit-geology trade-off](results/figures/egg_misfit_geology_tradeoff.svg)](results/figures/egg_misfit_geology_tradeoff.pdf)
+
 - Egg posterior comparison: [SVG](results/figures/egg_posterior_comparison.svg) · [PDF](results/figures/egg_posterior_comparison.pdf)
+- Egg misfit–geology trade-off: [SVG](results/figures/egg_misfit_geology_tradeoff.svg) · [PDF](results/figures/egg_misfit_geology_tradeoff.pdf)
 - Water-cut forecast: [SVG](results/figures/egg_water_cut_forecast.svg) · [PDF](results/figures/egg_water_cut_forecast.pdf)
 - Flow-matching source ablation: [SVG](results/figures/egg_source_ablation.svg) · [PDF](results/figures/egg_source_ablation.pdf)
 - Source inversion comparison: [SVG](results/figures/egg_source_inversions.svg) · [PDF](results/figures/egg_source_inversions.pdf)
