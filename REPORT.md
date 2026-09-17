@@ -96,17 +96,16 @@ measured final comparison is:
 | PCA | 1.88520 | 503,833.58 | 504,820.61 | 505,850.00 | yes | `results/raw/egg_inversion_augmentation_pca.json` | `8feec05e63599aa6b413edc332d2625828f92214` |
 | FM latent | 61.92531 | 495,305.02 | 500,046.95 | 504,164.75 | no | `results/raw/egg_inversion_augmentation_fm.json` | `ccc14b09e1323023f3f1fd7ec689c2770980b88d` |
 
-The geological diagnostics expose the central trade-off. Relative to truth,
-the mean absolute error across 32 injector–producer connectivity probabilities
-is 0.20281 for the prior, 0.13250 for raw, 0.11938 for PCA, and 0.16844 for FM.
-Raw and PCA therefore recover connectivity better in this run, but blur the
-permeability distribution: bimodality falls from 0.48308 in the prior to
-0.31896 and 0.32432. FM retains 0.48133, close to both the prior and the truth
-value 0.45291. The median fraction of sand belonging to the largest connected
-component is 0.78547 before inversion, 0.57181 for raw, 0.47605 for PCA,
-0.70308 for FM, and 0.92273 in the held-out truth. Thus FM preserves the prior
-geological morphology better, but that preservation comes with substantially
-worse history matching and a biased-low FOPT forecast in this pilot.
+Relative to truth, the mean absolute error across 32 injector–producer
+connectivity probabilities is 0.20281 for the prior, 0.13250 for raw, 0.11938
+for PCA, and 0.16844 for FM. Bimodality is 0.48308 in the prior, 0.31896 after
+raw inversion, 0.32432 after PCA, and 0.48133 after FM. The FM value differs
+from its own prior by only 0.00175 while its final misfit remains 61.92531.
+The median fraction of sand in the largest connected component similarly moves
+from 0.78547 in the prior to 0.70308 for FM, compared with 0.57181 for raw and
+0.47605 for PCA (truth: 0.92273). These numbers do not establish an FM
+geological advantage: the apparently preserved morphology cannot be separated
+from the fact that the FM ensemble barely assimilated the observations.
 
 A stagewise diagnostic does not yet provide a genuinely equal-misfit control.
 The stored raw and PCA stages closest to the final FM misfit of 61.92531 are
@@ -135,6 +134,32 @@ complete values, artifact SHA-256 hashes, and deriving commit are in
 ensemble histograms, and cluster-size survival distributions; a second SVG
 shows water-cut uncertainty through the held-out forecast. Deterministic vector
 PDF counterparts are stored beside both SVG files.
+
+## Parameterization subspaces
+
+PCA retained 85 components at an ensemble size of 100 and explained 0.95286
+of the prior variance. Its subspace therefore consumes most of the maximum 99
+ensemble-anomaly directions available to raw ES-MDA. The near-equal final raw
+and PCA misfits, 2.00665 and 1.88520, are not evidence from two independent
+baselines: both updates operate in nearly the same sampled subspace. The
+ambient raw and FM vectors each contain 18,553 active cells, but that dimension
+does not determine the update rank; for every parameterization the ES-MDA
+update lies in an anomaly subspace of rank at most `N - 1 = 99`.
+
+The stage-0 in-sample truncated-SVD regression gives `R²_lin = 1.0000` for raw,
+`0.98830` for PCA, and `1.0000` for FM. The expected low FM linear-response
+score is therefore not observed. Because raw and FM retain all 99 available
+anomaly directions, the perfect in-sample scores can reflect interpolation and
+must not be read as proof that the composed FM forward map is linear. A direct
+decoder test does find nonlinearity: over 200 fixed member pairs, FM midpoint
+errors have P10/P50/P90 `0.07577 / 0.08427 / 0.09331`, versus exactly zero for
+raw and below `1.62e-8` for PCA. Across the four original FM updates, relative
+latent shifts decline from 0.73244 to 0.45606, but field shifts are only
+0.11565 to 0.09029; the field-to-latent ratios are 0.15789–0.19798. Thus
+decoder attenuation is measured, but the present diagnostics do not by
+themselves prove that it caused the final high misfit. The complete values and
+hashes are in `results/tables/f2_linearity.csv` and
+`results/raw/f2_linearity.json`.
 
 ## Matérn source ablation (source-quality stage)
 
@@ -220,8 +245,13 @@ geological diagnostics. The complete 12-row matrix is
   matrix and the overall inversion/forecast scores; fitted Matérn improves
   only the selected connectivity diagnostic.
 - The original augmentation FM inversion has much worse data fit and FOPT
-  calibration than raw and PCA despite preserving bimodality and connected
-  morphology better.
+  calibration than raw and PCA. Its nearly prior-like bimodality cannot be
+  interpreted as preservation at equal history-match quality.
+- No first-session inversion used localization despite 18,553 parameters and
+  only 100 ensemble members. The raw baseline may therefore overfit spurious
+  long-range correlations; its very low misfit and narrow forecast interval
+  are a potentially optimistic upper benchmark until the localized control is
+  complete.
 - Matérn improves selected UNO coarse-to-full statistics, but not connectivity
   or spanning error, and it does not improve U-Net transfer in this experiment.
 - Every FM model reproduces the supplied synthetic training distribution; it
