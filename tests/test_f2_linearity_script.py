@@ -10,7 +10,10 @@ import pytest
 repository = Path(__file__).parents[1]
 sys.path.insert(0, str(repository / "scripts"))
 
-from f2_linearity_diagnostics import _build_diagnostics  # noqa: E402
+from f2_linearity_diagnostics import (  # noqa: E402
+    _build_diagnostics,
+    _cross_validated_linear_response,
+)
 
 
 def _write_artifact(path: Path, method: str) -> None:
@@ -48,11 +51,13 @@ def test_build_diagnostics_combines_linearity_midpoints_and_fm_shifts(
         svd_energy=1.0,
         pair_count=3,
         pair_seed=17,
+        n_folds=2,
+        fold_seed=23,
         derived_git_commit="a" * 40,
         decoder_metadata={"fm": {"checkpoint_sha256": "b" * 64}},
     )
 
-    assert len(rows) == 4
+    assert len(rows) == 5
     stage_zero = {row["parameterization"]: row for row in rows if row["stage"] == 0}
     assert set(stage_zero) == {"raw", "pca", "fm"}
     assert all(row["r2_lin"] == pytest.approx(1.0) for row in stage_zero.values())
@@ -64,4 +69,36 @@ def test_build_diagnostics_combines_linearity_midpoints_and_fm_shifts(
     assert update["field_relative_shift"] == pytest.approx(3.0)
     assert update["field_to_latent_shift_ratio"] == pytest.approx(3.0)
     assert payload["pair_seed"] == 17
+    assert payload["fold_seed"] == 23
+    assert payload["n_folds"] == 2
     assert payload["parameterizations"]["fm"]["checkpoint_sha256"] == "b" * 64
+    assert all(row["r2_oos_mean"] == pytest.approx(1.0) for row in stage_zero.values())
+    final = next(row for row in rows if row["diagnostic"] == "final_stage_linearity_oos")
+    assert final["parameterization"] == "fm"
+    assert final["stage"] == 1
+
+
+def test_cross_validated_linearity_exposes_in_sample_interpolation() -> None:
+    rng = np.random.default_rng(91)
+    parameters = rng.normal(size=(20, 19))
+    simulated = rng.normal(size=(20, 4))
+
+    scores = _cross_validated_linear_response(
+        parameters,
+        simulated,
+        svd_energy=1.0,
+        n_folds=5,
+        seed=20260915,
+    )
+
+    assert scores.in_sample_r2 == pytest.approx(1.0, abs=1e-12)
+    assert scores.mean < 0.5
+    assert scores.std > 0.0
+    assert len(scores.fold_scores) == 5
+    assert scores == _cross_validated_linear_response(
+        parameters,
+        simulated,
+        svd_energy=1.0,
+        n_folds=5,
+        seed=20260915,
+    )

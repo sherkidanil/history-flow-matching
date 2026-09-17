@@ -26,6 +26,35 @@ Entries must be dated and must distinguish measured facts from hypotheses.
 
 ## Open blockers
 
+### The non-monotone FM assimilation-step and ensemble-size controls are only partly explained
+
+- **Configuration audit (2026-09-17):** The `fm`, `fm_na8`, `fm_na16`, and
+  `fm_na8_n200` reports use the same observation-noise seed (`20260915`), prior
+  SHA-256, truth case, 160 observations, FM checkpoint, FM configuration, and
+  training data. Every inflation schedule satisfies `sum(1 / alpha_i) = 1`.
+  The 200-member inverse transform is finite for all members. Its first 96
+  stage-0 members match the 100-member run exactly; members 96--99 differ only
+  at the final inference-batch boundary (stage-0 field relative Frobenius
+  difference `5.71e-8`, maximum absolute difference `3.48e-5`). This is not
+  large enough to invalidate the control.
+- **Measured saturation:** Final prior-relative field distances are `0.15249`
+  for `fm_na8`, `0.15426` for `fm_na16`, and `0.14120` for
+  `fm_na8_n200`. Per-stage relative field shifts decline to `0.05425`,
+  `0.04627`, and `0.06746`, respectively, but do not become zero.
+- **Measured collapse and conditioning:** After stage 9, `fm_na16` oscillates
+  in misfit while effective ensemble membership falls from `33.96` to `22.43`;
+  its normalized covariance-system condition number also rebounds from `65.6`
+  to values as high as `141`. This is consistent with, but does not prove,
+  noisy covariance updates after decoder-limited field displacement.
+- **Unresolved ensemble-size anomaly:** `fm_na8_n200` finishes with more
+  effective members (`64.63`) and more ensemble-explained normalized data
+  variance (`0.770`) than `fm_na8` (`27.83` and `0.379`), yet its misfit is
+  worse (`32.107` versus `6.628`). Ensemble collapse alone therefore cannot
+  explain why 200 members are worse than 100. Treat the result as a measured
+  non-monotone stochastic ES-MDA outcome pending replicated-seed or localized
+  controls, not as evidence that larger ensembles are intrinsically harmful.
+- **Source:** `results/tables/g2_anomaly_diagnostics.csv`.
+
 ### FM assimilation failure is not explained by the in-sample linear-response fit
 
 - **Measured (2026-09-16, before remedy runs):** On the common 100-member Egg
