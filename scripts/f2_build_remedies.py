@@ -152,19 +152,22 @@ def _map_inversions(paths: list[Path]) -> dict[str, Path]:
     for path in paths:
         with h5py.File(path) as handle:
             method = str(handle.attrs["method"])
-        if method in mapped:
-            raise ValueError(f"duplicate inversion method: {method}")
-        mapped[method] = path
+            label = str(handle.attrs.get("parameterization_label", method))
+        if label in mapped:
+            raise ValueError(f"duplicate inversion label: {label}")
+        mapped[label] = path
     return mapped
 
 
 def _map_reports(paths: list[Path]) -> dict[str, Path]:
     mapped: dict[str, Path] = {}
     for path in paths:
-        method = str(_load_report(path)["method"])
-        if method in mapped:
-            raise ValueError(f"duplicate report method: {method}")
-        mapped[method] = path
+        report = _load_report(path)
+        method = str(report["method"])
+        label = str(report.get("parameterization_label", method))
+        if label in mapped:
+            raise ValueError(f"duplicate report label: {label}")
+        mapped[label] = path
     return mapped
 
 

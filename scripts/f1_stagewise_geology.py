@@ -18,14 +18,11 @@ from m8_egg_case import load_egg_ensemble
 from fmgeo.artifacts import sha256_file
 from fmgeo.forward.egg import EGG_PRODUCERS, parse_egg_well_locations
 from fmgeo.inverse.egg import load_egg_inversion_config
-from fmgeo.metrics.egg import (
-    closest_stage_to_target,
-    egg_well_connectivity,
-    summarize_egg_stage,
-)
+from fmgeo.metrics.egg import egg_well_connectivity, summarize_egg_stage
 from fmgeo.plotting import save_vector_figure
 
 METHODS = ("raw", "pca", "fm")
+MATCHED_VARIANTS = ("raw_na8", "pca_na8", "fm_na8")
 DIAGNOSTIC_SCOPE = (
     "diagnostic stage comparison; an intermediate ES-MDA stage is not equivalent "
     "to a completed run with fewer assimilations"
@@ -74,16 +71,19 @@ def _build_rows(
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """Derive stagewise and matched-misfit rows from immutable artifacts."""
 
-    if set(inversions) != set(METHODS) or set(reports) != set(METHODS):
-        raise ValueError("exactly one raw, PCA, and FM artifact and report are required")
+    if not inversions or set(inversions) != set(reports):
+        raise ValueError("every labeled inversion must have one matching report")
     truth_connectivity = egg_well_connectivity(truth, threshold=threshold, wells=wells)
     stagewise: list[dict[str, object]] = []
     truth_fopt: float | None = None
     strategy: str | None = None
-    for method in METHODS:
-        artifact_path = inversions[method]
-        report_path = reports[method]
+    for variant in inversions:
+        artifact_path = inversions[variant]
+        report_path = reports[variant]
         report = _load_report(report_path)
+        method = str(report["method"])
+        if method not in METHODS:
+            raise ValueError(f"unsupported inversion method: {method}")
         method_truth_fopt = float(report["truth_terminal_fopt"])
         if truth_fopt is None:
             truth_fopt = method_truth_fopt
@@ -98,8 +98,10 @@ def _build_rows(
             parameterization = str(
                 handle.attrs.get("parameterization_label", artifact_method)
             )
-            if artifact_method != method or str(report["method"]) != method:
+            if artifact_method != method:
                 raise ValueError("artifact/report method does not match its input label")
+            if parameterization != variant:
+                raise ValueError("artifact parameterization label does not match input label")
             if strategy is None:
                 strategy = artifact_strategy
             elif artifact_strategy != strategy:
@@ -126,7 +128,8 @@ def _build_rows(
                 stagewise.append(
                     {
                         "strategy": artifact_strategy,
-                        "parameterization": parameterization,
+                        "variant": variant,
+                        "parameterization": method,
                         "stage": int(stage_name.removeprefix("stage_")),
                         **summary,
                         "source_artifact": artifact_path.as_posix(),
@@ -140,38 +143,89 @@ def _build_rows(
     if truth_fopt is None:
         raise ValueError("truth FOPT is unavailable")
 
-    by_parameterization = {
-        method: [row for row in stagewise if row["parameterization"] == method]
-        for method in METHODS
+    if set(MATCHED_VARIANTS).issubset(inversions):
+        raw_variant, pca_variant, fm_variant = MATCHED_VARIANTS
+    elif set(METHODS).issubset(inversions):
+        raw_variant, pca_variant, fm_variant = METHODS
+    else:
+        raise ValueError("matched comparison requires raw, PCA, and FM variants")
+    by_variant = {
+        variant: [row for row in stagewise if row["variant"] == variant]
+        for variant in (raw_variant, pca_variant, fm_variant)
     }
-    if any(not rows for rows in by_parameterization.values()):
-        raise ValueError("parameterization labels must be raw, pca, and fm")
-    fm_final = max(by_parameterization["fm"], key=lambda row: _as_int(row["stage"]))
+    fm_final = max(by_variant[fm_variant], key=lambda row: _as_int(row["stage"]))
     target = _as_float(fm_final["mean_normalized_data_misfit"])
-    matched: list[dict[str, object]] = []
-    for method in METHODS:
-        rows = by_parameterization[method]
-        if method == "fm":
-            selected = fm_final
-            gap = 0.0
-        else:
-            stage, gap = closest_stage_to_target(
-                {
-                    _as_int(row["stage"]): _as_float(
-                        row["mean_normalized_data_misfit"]
-                    )
-                    for row in rows
-                },
-                target=target,
+    matched: list[dict[str, object]] = [
+        {
+            **fm_final,
+            "misfit_gap": 0.0,
+            "misfit_relation": "target",
+            "matched_target_misfit": target,
+            "comparison_scope": DIAGNOSTIC_SCOPE,
+        }
+    ]
+    for variant in (raw_variant, pca_variant):
+        rows = by_variant[variant]
+        exact = [
+            row
+            for row in rows
+            if np.isclose(
+                _as_float(row["mean_normalized_data_misfit"]),
+                target,
+                rtol=0.0,
+                atol=1e-12,
             )
-            selected = next(row for row in rows if _as_int(row["stage"]) == stage)
-        matched.append(
-            {
-                **selected,
-                "misfit_gap": gap,
-                "matched_target_misfit": target,
-                "comparison_scope": DIAGNOSTIC_SCOPE,
-            }
+        ]
+        if exact:
+            selected_rows = [(exact[0], "target")]
+        else:
+            above = [
+                row
+                for row in rows
+                if _as_float(row["mean_normalized_data_misfit"]) > target
+            ]
+            below = [
+                row
+                for row in rows
+                if _as_float(row["mean_normalized_data_misfit"]) < target
+            ]
+            selected_rows = []
+            if above:
+                selected_rows.append(
+                    (
+                        min(
+                            above,
+                            key=lambda row: _as_float(
+                                row["mean_normalized_data_misfit"]
+                            ),
+                        ),
+                        "above",
+                    )
+                )
+            if below:
+                selected_rows.append(
+                    (
+                        max(
+                            below,
+                            key=lambda row: _as_float(
+                                row["mean_normalized_data_misfit"]
+                            ),
+                        ),
+                        "below",
+                    )
+                )
+            if not selected_rows:
+                raise ValueError(f"variant {variant} has no stages")
+        for selected, relation in selected_rows:
+            gap = abs(_as_float(selected["mean_normalized_data_misfit"]) - target)
+            matched.append(
+                {
+                    **selected,
+                    "misfit_gap": gap,
+                    "misfit_relation": relation,
+                    "matched_target_misfit": target,
+                    "comparison_scope": DIAGNOSTIC_SCOPE,
+                }
         )
     return stagewise, matched
 
@@ -189,15 +243,54 @@ def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
 def _plot(rows: list[dict[str, object]], svg_path: Path, pdf_path: Path) -> None:
     if not rows:
         raise ValueError("trade-off plot requires stagewise rows")
-    colors = {"raw": "#440154", "pca": "#21918c", "fm": "#fde725"}
+    colors = {"raw": "#440154", "pca": "#21918c", "fm": "#d49b00"}
+    linestyles = {
+        "raw": "--",
+        "pca": "--",
+        "fm": "--",
+        "raw_na8": "-",
+        "pca_na8": "-",
+        "fm_na8": "-",
+        "fm_na16": ":",
+        "fm_na8_n200": "-.",
+    }
+    labels = {
+        "raw": "Raw, Nₐ=4, N=100",
+        "pca": "PCA, Nₐ=4, N=100",
+        "fm": "FM, Nₐ=4, N=100",
+        "raw_na8": "Raw, Nₐ=8, N=100",
+        "pca_na8": "PCA, Nₐ=8, N=100",
+        "fm_na8": "FM, Nₐ=8, N=100",
+        "fm_na16": "FM, Nₐ=16, N=100",
+        "fm_na8_n200": "FM, Nₐ=8, N=200",
+    }
+    annotated_stages = {
+        "raw": {1, 2, 4},
+        "pca": {1, 2, 4},
+        "fm": {4},
+        "raw_na8": {1, 2, 8},
+        "pca_na8": {1, 2, 8},
+        "fm_na8": {8},
+        "fm_na16": {16},
+        "fm_na8_n200": {8},
+    }
+    annotation_offsets = {
+        "raw_na8": (4, 7),
+        "pca_na8": (4, -13),
+        "fm_na8": (4, 8),
+        "fm_na16": (4, -13),
+        "fm_na8_n200": (4, 8),
+    }
     figure, axes = plt.subplots(1, 2, figsize=(10.5, 4.2), constrained_layout=True)
-    for method in METHODS:
+    variants = list(dict.fromkeys(str(row["variant"]) for row in rows))
+    for variant in variants:
         selected = sorted(
-            (row for row in rows if row["parameterization"] == method),
+            (row for row in rows if row["variant"] == variant),
             key=lambda row: _as_int(row["stage"]),
         )
         if not selected:
-            raise ValueError(f"trade-off plot is missing {method}")
+            raise ValueError(f"trade-off plot is missing {variant}")
+        method = str(selected[0]["parameterization"])
         misfit = np.asarray(
             [_as_float(row["mean_normalized_data_misfit"]) for row in selected]
         )
@@ -212,20 +305,17 @@ def _plot(rows: list[dict[str, object]], svg_path: Path, pdf_path: Path) -> None
                 values,
                 marker="o",
                 color=colors[method],
-                label=method.upper(),
+                linestyle=linestyles.get(variant, "-"),
+                label=labels.get(variant, variant),
             )
             for row, x, y in zip(selected, misfit, values, strict=True):
                 stage = _as_int(row["stage"])
-                if method == "raw":
-                    offset = (4, 6)
-                elif method == "pca":
-                    offset = (4, -12)
-                else:
-                    offset = (4, 8 - 6 * stage)
+                if stage not in annotated_stages.get(variant, {0, len(selected) - 1}):
+                    continue
                 axis.annotate(
                     str(stage),
                     (x, y),
-                    xytext=offset,
+                    xytext=annotation_offsets.get(variant, (4, 6)),
                     textcoords="offset points",
                     fontsize=8,
                 )
@@ -233,8 +323,8 @@ def _plot(rows: list[dict[str, object]], svg_path: Path, pdf_path: Path) -> None
             axis.set_xscale("log")
             axis.margins(x=0.08, y=0.1)
             axis.grid(alpha=0.25)
-    handles, labels = axes[0].get_legend_handles_labels()
-    figure.legend(handles, labels, loc="outside lower center", ncol=3)
+    handles, legend_labels = axes[0].get_legend_handles_labels()
+    figure.legend(handles, legend_labels, loc="outside lower center", ncol=3)
     figure.suptitle("Egg assimilation trajectory: data fit versus geology")
     description = json.dumps(
         sorted({str(row["source_artifact_sha256"]) for row in rows})
@@ -263,19 +353,22 @@ def _map_inversions(paths: list[Path]) -> dict[str, Path]:
     for path in paths:
         with h5py.File(path) as handle:
             method = str(handle.attrs["method"])
-        if method in mapped:
-            raise ValueError(f"duplicate inversion method: {method}")
-        mapped[method] = path
+            label = str(handle.attrs.get("parameterization_label", method))
+        if label in mapped:
+            raise ValueError(f"duplicate inversion label: {label}")
+        mapped[label] = path
     return mapped
 
 
 def _map_reports(paths: list[Path]) -> dict[str, Path]:
     mapped: dict[str, Path] = {}
     for path in paths:
-        method = str(_load_report(path)["method"])
-        if method in mapped:
-            raise ValueError(f"duplicate inversion report method: {method}")
-        mapped[method] = path
+        report = _load_report(path)
+        method = str(report["method"])
+        label = str(report.get("parameterization_label", method))
+        if label in mapped:
+            raise ValueError(f"duplicate inversion report label: {label}")
+        mapped[label] = path
     return mapped
 
 

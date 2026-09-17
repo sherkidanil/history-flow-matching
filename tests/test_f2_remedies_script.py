@@ -12,13 +12,16 @@ from fmgeo.artifacts import sha256_file
 
 repository = Path(__file__).parents[1]
 sys.path.insert(0, str(repository / "scripts"))
-from f2_build_remedies import _build_rows  # noqa: E402
+from f2_build_remedies import _build_rows, _map_inversions, _map_reports  # noqa: E402
 
 sys.path.pop(0)
 
 
-def _write_inputs(root: Path, method: str) -> tuple[Path, Path]:
-    artifact = root / f"{method}.h5"
+def _write_inputs(
+    root: Path, method: str, label: str | None = None
+) -> tuple[Path, Path]:
+    resolved_label = method if label is None else label
+    artifact = root / f"{resolved_label}.h5"
     fields = np.asarray(
         [
             [[[0.0, 2.0]]],
@@ -30,7 +33,7 @@ def _write_inputs(root: Path, method: str) -> tuple[Path, Path]:
     with h5py.File(artifact, "w") as handle:
         handle.attrs["method"] = method
         handle.attrs["strategy"] = "augmentation"
-        handle.attrs["parameterization_label"] = f"{method}_na8"
+        handle.attrs["parameterization_label"] = resolved_label
         handle.create_dataset("observation", data=[1.0])
         handle.create_dataset("truth_data", data=[1.0])
         handle.create_dataset("sigma", data=[1.0])
@@ -38,11 +41,12 @@ def _write_inputs(root: Path, method: str) -> tuple[Path, Path]:
         group.create_dataset("logk", data=fields)
         group.create_dataset("simulated_data", data=np.arange(4.0)[:, None])
         group.create_dataset("fopt", data=[1.0, 2.0, 3.0, 4.0])
-    report = root / f"{method}.json"
+    report = root / f"{resolved_label}.json"
     report.write_text(
         json.dumps(
             {
                 "method": method,
+                "parameterization_label": resolved_label,
                 "strategy": "augmentation",
                 "remedy": "assimilation_steps",
                 "n_assimilations": 8,
@@ -128,3 +132,16 @@ def test_build_remedy_rows_accepts_two_labeled_raw_variants(tmp_path: Path) -> N
 
     assert {row["variant"] for row in rows} == set(inversions)
     assert [row["parameterization"] for row in rows].count("raw") == 2
+
+
+def test_cli_maps_multiple_fm_runs_by_parameterization_label(tmp_path: Path) -> None:
+    inputs = [
+        _write_inputs(tmp_path, "fm", label)
+        for label in ("fm_na8", "fm_na16", "fm_na8_n200")
+    ]
+
+    inversions = _map_inversions([artifact for artifact, _ in inputs])
+    reports = _map_reports([report for _, report in inputs])
+
+    assert list(inversions) == ["fm_na8", "fm_na16", "fm_na8_n200"]
+    assert list(reports) == ["fm_na8", "fm_na16", "fm_na8_n200"]
