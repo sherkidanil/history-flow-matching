@@ -578,3 +578,18 @@ uv run python scripts/m9_build_resolution_ablation.py \
   --figure-output results/figures/ablation_resolution.svg \
   --pdf-output results/figures/ablation_resolution.pdf
 ```
+
+## G4 bounded localization controls
+
+The first `raw_na8_localized` attempt was stopped at ES-MDA stage 2 after the
+localized update expanded active-cell `log(k)` to `[-67.6, 83.6]`: 30 OPM Flow
+runs failed nonlinear convergence and 39 timed out. The amended G4 protocol
+clips decoded active-cell fields to the predeclared simulator-safe interval
+`[2, 11]`, which contains the complete successful Raw Na=8 range. HDF5 stage
+attributes and JSON stage records expose the fraction clipped.
+
+Use `configs/egg/inversion_na8_localized.yaml` for both bounded Raw and bounded
+FM localization controls. Use
+`configs/egg/inversion_na8_ensemble200_bounded.yaml` for the bounded Raw N=200
+control; the original unbounded N=200 configuration remains unchanged for
+provenance.

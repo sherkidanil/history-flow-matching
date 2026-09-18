@@ -1,12 +1,11 @@
-# G4: predeclared Na=8 localization control for raw and full-field FM latent parameters.
+# G4 ensemble-size control: the original Na=8 N=200 protocol plus the approved
+# simulator-stability bounds applied identically to all G4 parameterizations.
 seed: 20260915
 truth_realization: 100
-ensemble_size: 100
+ensemble_size: 200
 inflations: [8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0]
 svd_energy: 0.999
 pca_variance_fraction: 0.95
-# Post-failure G4 amendment: preserve the full successful Raw Na=8 range while
-# preventing localized updates from producing simulator-destabilizing extremes.
 logk_bounds: [2.0, 11.0]
 
 history_end_day: 1800.0
@@ -19,10 +18,8 @@ water_breakthrough_fraction: 0.05
 high_permeability_quantile: 0.65
 
 localization:
-  enabled: true
+  enabled: false
   kind: gaspari_cohn
-  # Fixed before these runs from the longest prior horizontal scale:
-  # 8 x-cells x 8 m = 64 m. Gaspari-Cohn support ends at 128 m.
   radius_m: 64.0
   cell_size_yx_m: [8.0, 8.0]
 fm_latent_pca: false

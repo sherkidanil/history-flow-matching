@@ -120,26 +120,37 @@ def test_remedy_metadata_and_pca_localization_guard() -> None:
 
 def test_na8_ensemble200_config_changes_only_ensemble_size() -> None:
     baseline = load_egg_inversion_config(repository / "configs/egg/inversion_na8.yaml")
-    enlarged = load_egg_inversion_config(
-        repository / "configs/egg/inversion_na8_ensemble200.yaml"
-    )
+    enlarged = load_egg_inversion_config(repository / "configs/egg/inversion_na8_ensemble200.yaml")
 
     assert enlarged.ensemble_size == 200
     assert baseline.ensemble_size == 100
     assert enlarged.model_copy(update={"ensemble_size": 100}) == baseline
 
 
-def test_na8_localized_config_changes_only_localization() -> None:
+def test_na8_localized_config_adds_localization_and_approved_bounds() -> None:
     baseline = load_egg_inversion_config(repository / "configs/egg/inversion_na8.yaml")
-    localized = load_egg_inversion_config(
-        repository / "configs/egg/inversion_na8_localized.yaml"
-    )
+    localized = load_egg_inversion_config(repository / "configs/egg/inversion_na8_localized.yaml")
 
     assert localized.localization.enabled is True
     assert localized.localization.radius_m == 64.0
     assert localized.localization.cell_size_yx_m == (8.0, 8.0)
-    assert localized.model_copy(
-        update={
-            "localization": localized.localization.model_copy(update={"enabled": False})
-        }
-    ) == baseline
+    assert localized.logk_bounds == (2.0, 11.0)
+    assert (
+        localized.model_copy(
+            update={
+                "localization": localized.localization.model_copy(update={"enabled": False}),
+                "logk_bounds": None,
+            }
+        )
+        == baseline
+    )
+
+
+def test_na8_ensemble200_bounded_config_only_adds_approved_bounds() -> None:
+    baseline = load_egg_inversion_config(repository / "configs/egg/inversion_na8_ensemble200.yaml")
+    bounded = load_egg_inversion_config(
+        repository / "configs/egg/inversion_na8_ensemble200_bounded.yaml"
+    )
+
+    assert bounded.logk_bounds == (2.0, 11.0)
+    assert bounded.model_copy(update={"logk_bounds": None}) == baseline

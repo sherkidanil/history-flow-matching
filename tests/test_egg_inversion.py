@@ -57,6 +57,19 @@ def test_egg_inversion_config_validates_standard_protocol(tmp_path: Path) -> Non
     assert config.inflations == (4.0, 4.0, 4.0, 4.0)
 
 
+def test_egg_inversion_config_validates_optional_logk_bounds(tmp_path: Path) -> None:
+    path = _write_config(tmp_path / "inversion.yaml")
+    path.write_text(path.read_text(encoding="utf-8") + "logk_bounds: [2.0, 11.0]\n")
+
+    config = load_egg_inversion_config(path)
+
+    assert config.logk_bounds == (2.0, 11.0)
+
+    path.write_text(path.read_text(encoding="utf-8").replace("[2.0, 11.0]", "[11.0, 2.0]"))
+    with pytest.raises(ValueError, match="lower less than upper"):
+        load_egg_inversion_config(path)
+
+
 def test_parameterization_label_defaults_to_method_and_accepts_fm_variant() -> None:
     assert _resolve_parameterization_label("raw", None) == "raw"
     assert _resolve_parameterization_label("fm", "matern_misspec") == "matern_misspec"
@@ -142,3 +155,33 @@ def test_egg_esmda_sequence_matches_scalar_gaussian_posterior() -> None:
     assert len(stages) == 2
     assert stages[-1].parameters[:, 0].mean() == pytest.approx(0.5, abs=0.02)
     assert stages[-1].parameters[:, 0].var(ddof=1) == pytest.approx(0.5, abs=0.02)
+
+
+def test_egg_esmda_clips_only_active_decoded_values() -> None:
+    initial = np.array([[-1.0, 5.0], [3.0, 20.0]])
+    active = np.array([[[True, False, True]]])
+
+    def decode(parameters: np.ndarray) -> np.ndarray:
+        fields = np.zeros((len(parameters), 1, 1, 3))
+        fields[:, active] = parameters
+        return fields
+
+    stages = run_egg_esmda(
+        initial,
+        decode=decode,
+        evaluator=lambda field: ForwardResult(
+            "ok", (float(field[:, :, 0].item()),), 1.0, 0.0, 0, ""
+        ),
+        observation=np.array([1.0]),
+        observation_covariance=np.array([[1.0]]),
+        inflations=(1.0,),
+        rng=np.random.default_rng(7),
+        workers=1,
+        svd_energy=1.0,
+        field_bounds=(0.0, 10.0),
+        active=active,
+    )
+
+    np.testing.assert_array_equal(stages[0].fields[:, active], np.array([[0.0, 5.0], [3.0, 10.0]]))
+    assert np.count_nonzero(stages[0].fields[:, ~active]) == 0
+    assert stages[0].clipped_fraction == pytest.approx(0.5)

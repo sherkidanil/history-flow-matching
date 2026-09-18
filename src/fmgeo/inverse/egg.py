@@ -56,6 +56,7 @@ class EggInversionConfig(StrictModel):
     min_free_disk_gb: float = Field(ge=0)
     localization: EggLocalizationConfig = EggLocalizationConfig()
     fm_latent_pca: bool = False
+    logk_bounds: tuple[float, float] | None = None
 
     @model_validator(mode="after")
     def validate_protocol(self) -> EggInversionConfig:
@@ -65,6 +66,10 @@ class EggInversionConfig(StrictModel):
         intervals = self.history_end_day / self.observation_interval_days
         if not np.isclose(intervals, round(intervals), rtol=0.0, atol=1e-10):
             raise ValueError("history end must be divisible by observation interval")
+        if self.logk_bounds is not None:
+            lower, upper = self.logk_bounds
+            if not np.all(np.isfinite(self.logk_bounds)) or lower >= upper:
+                raise ValueError("logk bounds must be finite with lower less than upper")
         return self
 
     @property
@@ -146,6 +151,7 @@ class EggAssimilationStage:
     parameters: NDArray[np.float64]
     fields: NDArray[np.float64]
     forward: EggEnsembleForwardResult
+    clipped_fraction: float = 0.0
 
 
 def run_egg_esmda(
@@ -160,6 +166,8 @@ def run_egg_esmda(
     workers: int,
     svd_energy: float,
     localization: ArrayLike | None = None,
+    field_bounds: tuple[float, float] | None = None,
+    active: ArrayLike | None = None,
     on_stage: Callable[[int, EggAssimilationStage], None] | None = None,
 ) -> tuple[EggAssimilationStage, ...]:
     """Run all ES-MDA stages, refusing to silently discard failed members."""
@@ -168,17 +176,30 @@ def run_egg_esmda(
     parameters = np.asarray(initial_parameters, dtype=np.float64)
     if parameters.ndim != 2 or parameters.shape[0] < 2 or not np.all(np.isfinite(parameters)):
         raise ValueError("initial parameters must be a finite ensemble-first matrix")
+    if (field_bounds is None) != (active is None):
+        raise ValueError("field bounds and active mask must be supplied together")
+    active_mask = None if active is None else np.asarray(active, dtype=bool)
     stages: list[EggAssimilationStage] = []
     for stage_index in range(len(inflation_schedule) + 1):
         fields = np.asarray(decode(parameters), dtype=np.float64)
         if fields.ndim != 4 or fields.shape[0] != len(parameters):
             raise ValueError("decoded fields must have ensemble-first 4D shape")
+        clipped_fraction = 0.0
+        if field_bounds is not None and active_mask is not None:
+            if fields.shape[1:] != active_mask.shape:
+                raise ValueError("active mask shape must match decoded fields")
+            active_values = fields[:, active_mask]
+            lower, upper = field_bounds
+            clipped_fraction = float(np.mean((active_values < lower) | (active_values > upper)))
+            fields = fields.copy()
+            fields[:, active_mask] = np.clip(active_values, lower, upper)
         forward = evaluate_egg_ensemble(fields, evaluator=evaluator, workers=workers)
         failed = np.flatnonzero(forward.status != "ok")
         stage = EggAssimilationStage(
             parameters=parameters.copy(),
             fields=fields.copy(),
             forward=forward,
+            clipped_fraction=clipped_fraction,
         )
         stages.append(stage)
         if on_stage is not None:

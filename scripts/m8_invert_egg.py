@@ -78,17 +78,14 @@ def _validate_remedy(method: Method, config: EggInversionConfig) -> None:
 
 def _write_stage(handle: h5py.File, index: int, stage: EggAssimilationStage) -> None:
     group = handle.create_group(f"stage_{index}")
+    group.attrs["clipped_fraction"] = stage.clipped_fraction
     group.create_dataset("parameters", data=stage.parameters.astype(np.float32), compression="gzip")
     group.create_dataset("logk", data=stage.fields.astype(np.float32), compression="gzip")
-    group.create_dataset(
-        "simulated_data", data=stage.forward.simulated_data.astype(np.float32)
-    )
+    group.create_dataset("simulated_data", data=stage.forward.simulated_data.astype(np.float32))
     group.create_dataset("fopt", data=stage.forward.fopt.astype(np.float32))
     string_dtype = h5py.string_dtype(encoding="utf-8")
     group.create_dataset("status", data=stage.forward.status.astype(string_dtype))
-    group.create_dataset(
-        "runtime_seconds", data=stage.forward.runtime_seconds.astype(np.float32)
-    )
+    group.create_dataset("runtime_seconds", data=stage.forward.runtime_seconds.astype(np.float32))
     group.create_dataset("cache_hit", data=stage.forward.cache_hit)
     group.create_dataset("returncode", data=stage.forward.returncode)
     group.create_dataset("stderr", data=np.asarray(stage.forward.stderr, dtype=string_dtype))
@@ -126,9 +123,7 @@ def main() -> int:
     parser.add_argument("--git-commit")
     args = parser.parse_args()
     method: Method = args.method
-    parameterization_label = _resolve_parameterization_label(
-        method, args.parameterization_label
-    )
+    parameterization_label = _resolve_parameterization_label(method, args.parameterization_label)
     if args.batch_size < 1:
         raise ValueError("batch size must be positive")
     if method == "fm" and not all((args.fm_config, args.checkpoint, args.training_data)):
@@ -189,9 +184,7 @@ def main() -> int:
             parameterization.update(
                 {
                     "latent_rank": latent_pca.rank,
-                    "latent_explained_variance_fraction": (
-                        latent_pca.explained_variance_fraction
-                    ),
+                    "latent_explained_variance_fraction": (latent_pca.explained_variance_fraction),
                     "matched_field_pca_rank": field_pca.rank,
                 }
             )
@@ -214,16 +207,12 @@ def main() -> int:
     covariance = np.diag(sigma**2)
     localization = None
     if config.localization.enabled:
-        deck = (args.template_dir / "EGG.DATA").read_text(
-            encoding="utf-8", errors="replace"
-        )
+        deck = (args.template_dir / "EGG.DATA").read_text(encoding="utf-8", errors="replace")
         well_locations = parse_egg_well_locations(deck)
         localization = well_observation_localization(
             active,
             producer_locations_yx=tuple(well_locations[name] for name in EGG_PRODUCERS),
-            observation_times=int(
-                round(config.history_end_day / config.observation_interval_days)
-            ),
+            observation_times=int(round(config.history_end_day / config.observation_interval_days)),
             cell_size_yx_m=config.localization.cell_size_yx_m,
             radius_m=config.localization.radius_m,
         )
@@ -276,6 +265,11 @@ def main() -> int:
             config.localization.radius_m if config.localization.enabled else np.nan
         )
         output.attrs["latent_rank"] = 0 if latent_rank is None else latent_rank
+        output.attrs["logk_bounds"] = (
+            np.asarray(config.logk_bounds, dtype=np.float64)
+            if config.logk_bounds is not None
+            else np.asarray([], dtype=np.float64)
+        )
         output.create_dataset("truth_data", data=truth_data.astype(np.float32))
         output.create_dataset("observation", data=observation.astype(np.float32))
         output.create_dataset("sigma", data=sigma.astype(np.float32))
@@ -290,6 +284,8 @@ def main() -> int:
             workers=config.workers,
             svd_energy=config.svd_energy,
             localization=localization,
+            field_bounds=config.logk_bounds,
+            active=active if config.logk_bounds is not None else None,
             on_stage=partial(_write_stage, output),
         )
         prior_fields = stages[0].fields
@@ -316,13 +312,12 @@ def main() -> int:
                 "fopt": {
                     **quantiles,
                     "truth": truth_fopt,
-                    "covered": coverage(
-                        truth_fopt, lower=quantiles["P10"], upper=quantiles["P90"]
-                    ),
+                    "covered": coverage(truth_fopt, lower=quantiles["P10"], upper=quantiles["P90"]),
                 },
                 "mean_normalized_data_misfit": float(np.mean(misfits)),
                 "cache_hits": int(stage.forward.cache_hit.sum()),
                 "runtime_seconds_sum": float(stage.forward.runtime_seconds.sum()),
+                "clipped_fraction": stage.clipped_fraction,
                 **ensemble_collapse_diagnostics(
                     stage.fields,
                     prior_fields=stages[0].fields,
@@ -331,9 +326,12 @@ def main() -> int:
             }
         )
 
-    git_commit = args.git_commit or subprocess.run(
-        ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
-    ).stdout.strip()
+    git_commit = (
+        args.git_commit
+        or subprocess.run(
+            ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+        ).stdout.strip()
+    )
     record = create_artifact_record(
         args.output,
         root=Path.cwd(),
@@ -366,6 +364,7 @@ def main() -> int:
             config.localization.radius_m if config.localization.enabled else None
         ),
         "latent_rank": latent_rank,
+        "logk_bounds": config.logk_bounds,
         "n_sim": sum(len(stage.fields) for stage in stages),
         "n_failed": sum(int(np.sum(stage.forward.status != "ok")) for stage in stages),
         "stages": stage_reports,
