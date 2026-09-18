@@ -127,3 +127,19 @@ def test_na8_ensemble200_config_changes_only_ensemble_size() -> None:
     assert enlarged.ensemble_size == 200
     assert baseline.ensemble_size == 100
     assert enlarged.model_copy(update={"ensemble_size": 100}) == baseline
+
+
+def test_na8_localized_config_changes_only_localization() -> None:
+    baseline = load_egg_inversion_config(repository / "configs/egg/inversion_na8.yaml")
+    localized = load_egg_inversion_config(
+        repository / "configs/egg/inversion_na8_localized.yaml"
+    )
+
+    assert localized.localization.enabled is True
+    assert localized.localization.radius_m == 64.0
+    assert localized.localization.cell_size_yx_m == (8.0, 8.0)
+    assert localized.model_copy(
+        update={
+            "localization": localized.localization.model_copy(update={"enabled": False})
+        }
+    ) == baseline
