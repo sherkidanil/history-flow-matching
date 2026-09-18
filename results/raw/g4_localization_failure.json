@@ -1,0 +1,43 @@
+{
+  "amendment_commit": "f4d4ad4",
+  "approved_logk_bounds": [
+    2.0,
+    11.0
+  ],
+  "benchmark": "Egg",
+  "failed_artifact_sha256": "119839410242117779c6e7ff74c725a2711d99978d897efd2b2ef8843c9352fb",
+  "failed_artifact_size_bytes": 41150693,
+  "failure": {
+    "stage": 2,
+    "status_counts": {
+      "failed": 30,
+      "ok": 31,
+      "timeout": 39
+    },
+    "failed_member_logk_range": [
+      -67.614,
+      83.607
+    ],
+    "simulator_diagnosis": "OPM Flow nonlinear solver failed after cutting the timestep 10 times"
+  },
+  "parameterization_label": "raw_na8_localized",
+  "source_commit": "46dbc59b332a5d8698aac1b484f68c1ca0853ab8",
+  "successful_unlocalized_raw_na8_logk_range": [
+    1.999,
+    10.64
+  ],
+  "validation_replays": [
+    {
+      "member": 0,
+      "original_status": "timeout",
+      "bounded_returncode": 0,
+      "bounded_runtime_seconds": 39
+    },
+    {
+      "member": 7,
+      "original_status": "failed",
+      "bounded_returncode": 0,
+      "bounded_runtime_seconds": 36
+    }
+  ]
+}

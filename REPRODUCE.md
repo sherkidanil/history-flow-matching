@@ -587,6 +587,8 @@ runs failed nonlinear convergence and 39 timed out. The amended G4 protocol
 clips decoded active-cell fields to the predeclared simulator-safe interval
 `[2, 11]`, which contains the complete successful Raw Na=8 range. HDF5 stage
 attributes and JSON stage records expose the fraction clipped.
+The failed-run counts, artifact checksum, and bounded replay evidence are retained
+in `results/raw/g4_localization_failure.json`.
 
 Use `configs/egg/inversion_na8_localized.yaml` for both bounded Raw and bounded
 FM localization controls. Use
