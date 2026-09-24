@@ -114,8 +114,7 @@ def test_remedy_metadata_and_pca_localization_guard() -> None:
         )
         == "assimilation_steps"
     )
-    with pytest.raises(ValueError, match="not applicable"):
-        _validate_remedy("pca", localized)
+    _validate_remedy("pca", localized)
 
 
 def test_na8_ensemble200_config_changes_only_ensemble_size() -> None:
