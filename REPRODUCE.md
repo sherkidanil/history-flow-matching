@@ -595,3 +595,36 @@ FM localization controls. Use
 `configs/egg/inversion_na8_ensemble200_bounded.yaml` for the bounded Raw N=200
 control; the original unbounded N=200 configuration remains unchanged for
 provenance.
+
+After the three inversion artifacts and reports are present, build the
+six-variant provenance table and deterministic vector figure with:
+
+```bash
+uv run python scripts/g4_build_controls.py \
+  --config configs/egg/inversion_na8.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
+  --inversion raw_na8=artifacts/egg_inversion_augmentation_raw_na8.h5 \
+  --inversion pca_na8=artifacts/egg_inversion_augmentation_pca_na8.h5 \
+  --inversion fm_na8=artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion raw_na8_localized=artifacts/egg_inversion_augmentation_raw_na8_localized.h5 \
+  --inversion fm_na8_localized=artifacts/egg_inversion_augmentation_fm_na8_localized.h5 \
+  --inversion raw_na8_n200=artifacts/egg_inversion_augmentation_raw_na8_n200.h5 \
+  --inversion-report raw_na8=results/raw/egg_inversion_augmentation_raw_na8.json \
+  --inversion-report pca_na8=results/raw/egg_inversion_augmentation_pca_na8.json \
+  --inversion-report fm_na8=results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report raw_na8_localized=results/raw/egg_inversion_augmentation_raw_na8_localized.json \
+  --inversion-report fm_na8_localized=results/raw/egg_inversion_augmentation_fm_na8_localized.json \
+  --inversion-report raw_na8_n200=results/raw/egg_inversion_augmentation_raw_na8_n200.json \
+  --table-output results/tables/g4_bounded_controls.csv \
+  --figure-output results/figures/g4_bounded_controls.svg \
+  --pdf-output results/figures/g4_bounded_controls.pdf
+```
+
+Expected outputs are `results/tables/g4_bounded_controls.csv` and
+`results/figures/g4_bounded_controls.{svg,pdf}`. The accepted Raw-localized,
+FM-localized, and Raw-N=200 artifacts have SHA-256 values beginning
+`268f51a0`, `e3a9a70c`, and `c80734c5`; the builder verifies each full digest
+against its JSON report before deriving the outputs.

@@ -14,6 +14,8 @@ derived from provenance-bearing raw artifacts.
 The cross-platform `uv` environment, storage-safe OPM Flow runner, Egg
 raw/PCA/FM inversion, controlled source ablation, and U-Net/UNO
 cross-resolution experiment are implemented with content-addressed artifacts.
+The bounded G4 controls are complete: a 200-member Raw run remains stable,
+while the predeclared fixed 64 m localization destabilizes both Raw and FM.
 M0 is verified against SPE1 with Flow 2026.04. PUNQ-S3 assimilation remains
 blocked because the available truth deck fails the published-FOPT validation
 gate; no PUNQ benchmark result is claimed. Measured details are in
@@ -31,8 +33,11 @@ GitHub-viewable SVG files and matching vector PDFs.
 
 [![Egg misfit-geology trade-off](results/figures/egg_misfit_geology_tradeoff.svg)](results/figures/egg_misfit_geology_tradeoff.pdf)
 
+[![Egg bounded localization controls](results/figures/g4_bounded_controls.svg)](results/figures/g4_bounded_controls.pdf)
+
 - Egg posterior comparison: [SVG](results/figures/egg_posterior_comparison.svg) · [PDF](results/figures/egg_posterior_comparison.pdf)
 - Egg misfit–geology trade-off: [SVG](results/figures/egg_misfit_geology_tradeoff.svg) · [PDF](results/figures/egg_misfit_geology_tradeoff.pdf)
+- Bounded localization and Raw N=200 controls: [SVG](results/figures/g4_bounded_controls.svg) · [PDF](results/figures/g4_bounded_controls.pdf)
 - Water-cut forecast: [SVG](results/figures/egg_water_cut_forecast.svg) · [PDF](results/figures/egg_water_cut_forecast.pdf)
 - Flow-matching source ablation: [SVG](results/figures/egg_source_ablation.svg) · [PDF](results/figures/egg_source_ablation.pdf)
 - Source inversion comparison: [SVG](results/figures/egg_source_inversions.svg) · [PDF](results/figures/egg_source_inversions.pdf)

@@ -46,14 +46,25 @@ Entries must be dated and must distinguish measured facts from hypotheses.
   its normalized covariance-system condition number also rebounds from `65.6`
   to values as high as `141`. This is consistent with, but does not prove,
   noisy covariance updates after decoder-limited field displacement.
-- **Unresolved ensemble-size anomaly:** `fm_na8_n200` finishes with more
+- **Unresolved FM ensemble-size anomaly:** `fm_na8_n200` finishes with more
   effective members (`64.63`) and more ensemble-explained normalized data
   variance (`0.770`) than `fm_na8` (`27.83` and `0.379`), yet its misfit is
   worse (`32.107` versus `6.628`). Ensemble collapse alone therefore cannot
-  explain why 200 members are worse than 100. Treat the result as a measured
-  non-monotone stochastic ES-MDA outcome pending replicated-seed or localized
-  controls, not as evidence that larger ensembles are intrinsically harmful.
-- **Source:** `results/tables/g2_anomaly_diagnostics.csv`.
+  explain why 200 members are worse than 100.
+- **G4 controls (2026-09-18):** The bounded unlocalized Raw N=200 control
+  finishes at misfit `1.67878`, retains `85.58` effective members, clips only
+  `2.16e-6` of active cells, and covers truth FOPT. Raw N=100 finishes at
+  `1.57134`. Thus ensemble size alone does not reproduce the FM anomaly. The
+  fixed 64 m localized Raw and FM controls instead finish at misfits `468.91`
+  and `2940.65`, clip `5.18%` and `33.59%` of active cells, and both miss truth
+  FOPT. All three bounded controls have zero failed simulations.
+- **Interpretation:** The predeclared 64 m localization is itself unstable for
+  this setup and cannot diagnose the FM mechanism. Treat the remaining result
+  as a measured FM-specific, non-monotone stochastic ES-MDA outcome pending
+  replication over seeds and truths, not as evidence that larger ensembles
+  or localization are intrinsically harmful.
+- **Sources:** `results/tables/g2_anomaly_diagnostics.csv` and
+  `results/tables/g4_bounded_controls.csv`.
 
 ### FM assimilation failure is not explained by the in-sample linear-response fit
 

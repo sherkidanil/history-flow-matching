@@ -7,6 +7,7 @@ import json
 import subprocess
 from collections.abc import Mapping
 from pathlib import Path
+from typing import TypedDict
 
 import h5py  # type: ignore[import-untyped]
 import matplotlib.pyplot as plt
@@ -29,12 +30,19 @@ G4_VARIANTS = (
 )
 
 
-def _stage_rows(reports: Mapping[str, Path]) -> list[dict[str, object]]:
+class G4StageRow(TypedDict):
+    variant: str
+    stage: int
+    mean_normalized_data_misfit: float
+    clipped_fraction: float
+
+
+def _stage_rows(reports: Mapping[str, Path]) -> list[G4StageRow]:
     """Load stage trajectories in the fixed G4 comparison order."""
 
     if tuple(reports) != G4_VARIANTS:
         raise ValueError(f"G4 reports must be ordered as: {', '.join(G4_VARIANTS)}")
-    rows: list[dict[str, object]] = []
+    rows: list[G4StageRow] = []
     for variant, path in reports.items():
         report = json.loads(path.read_text(encoding="utf-8"))
         if report.get("parameterization_label") != variant:
@@ -51,7 +59,7 @@ def _stage_rows(reports: Mapping[str, Path]) -> list[dict[str, object]]:
     return rows
 
 
-def _plot(rows: list[dict[str, object]], svg_path: Path, pdf_path: Path) -> None:
+def _plot(rows: list[G4StageRow], svg_path: Path, pdf_path: Path) -> None:
     """Plot G4 data-fit and clipping trajectories."""
 
     if not rows:

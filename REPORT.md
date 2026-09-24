@@ -233,11 +233,50 @@ difference `5.71e-8`. Prior-relative field distance saturates near 0.15 in all
 runs. In `fm_na16`, misfit oscillation after stage 9 coincides with effective
 membership falling from 33.96 to 22.43 and covariance-system conditioning
 rebounding, consistent with noisy updates after decoder-limited displacement.
-This is an association, not a causal proof. The N=200 anomaly remains open:
+This is an association, not a causal proof. The original FM N=200 anomaly
+remains open:
 it retains 64.63 effective members and 0.770 ensemble-explained normalized
 data variance, yet ends worse than N=100. The 40 stagewise diagnostic rows are
 in `results/tables/g2_anomaly_diagnostics.csv`, and the unresolved inference is
 recorded in `BLOCKERS.md`.
+
+## Bounded localization and Raw N=200 control
+
+G4 tests two proposed explanations for the FM behavior: spurious long-range
+sample covariance and ensemble size. All controls use eight ES-MDA steps. The
+localized runs use the predeclared fixed 64 m Gaspari--Cohn radius; those runs
+and the Raw N=200 control bound active-cell `log(k)` to `[2, 11]`. The bound
+was added after the first unbounded localized Raw attempt reached
+`[-67.6, 83.6]` at stage 2, causing 30 simulator failures and 39 timeouts. A
+replay of those members with the bound succeeded, and every complete bounded
+control below has zero failed simulations.
+
+| Variant | N | Localization | Final misfit | Field spread | Effective members | Cells clipped | FOPT covers truth |
+|---|---:|:---:|---:|---:|---:|---:|:---:|
+| Raw | 100 | no | 1.57134 | 0.39222 | 36.71 | 0.0000% | yes |
+| PCA | 100 | no | 1.48103 | 0.37643 | 34.20 | 0.0000% | yes |
+| FM | 100 | no | 6.62827 | 0.37770 | 27.83 | 0.0000% | yes |
+| Raw localized | 100 | 64 m | 468.90823 | 0.85047 | 18.44 | 5.1766% | no |
+| FM localized | 100 | 64 m | 2940.65169 | 0.49267 | 43.39 | 33.5908% | no |
+| Raw bounded | 200 | no | 1.67878 | 0.54360 | 85.58 | 0.0002% | yes |
+
+The Raw N=200 control remains stable and close to Raw N=100: its final misfit
+is 1.67878 versus 1.57134, it retains 85.58 effective members, and only
+`2.16e-6` of active cells hit a bound. Ensemble size alone therefore does not
+explain the FM N=200 result of 32.10739. The remaining mechanism is specific
+to the FM parameterization interacting with stochastic ES-MDA updates and
+requires replication over seeds or truths to characterize.
+
+The fixed-radius localization does not rescue either parameterization. Raw
+ends at misfit 468.91 with 5.18% clipping; FM ends at 2940.65 with 33.59%
+clipping. Both forecast intervals miss truth. Thus the predeclared 64 m
+localization is rejected for this setup, not localization in general. The
+result also narrows the earlier positive claim: FM's matched-misfit
+bimodality/connectivity advantage remains a measured property of the
+unlocalized trajectory, but this one localization control does not support it
+as a robust inversion advantage. Full provenance and geological metrics are
+in `results/tables/g4_bounded_controls.csv`; stage trajectories and clipping
+are shown in `results/figures/g4_bounded_controls.svg` and its vector PDF.
 
 ## Matérn source ablation (source-quality stage)
 
@@ -329,13 +368,13 @@ geological diagnostics. The complete 12-row matrix is
   times both baselines.
 - More assimilation steps and a larger ensemble are not monotonically better:
   `fm_na16` and `fm_na8_n200` finish worse than `fm_na8`. Saturation and
-  collapse are consistent with the late `N_a=16` oscillations, but the
-  200-member anomaly is unexplained and must not be generalized.
-- No first-session inversion used localization despite 18,553 parameters and
-  only 100 ensemble members. The raw baseline may therefore overfit spurious
-  long-range correlations; its very low misfit and narrow forecast interval
-  are a potentially optimistic upper benchmark until the localized control is
-  complete.
+  collapse are consistent with the late `N_a=16` oscillations. Stable Raw
+  N=100 and N=200 controls rule out ensemble size alone, but the FM-specific
+  N=200 mechanism is unresolved and must not be generalized.
+- Fixed 64 m Gaspari--Cohn localization is a negative result: even after
+  simulator-safe bounding, Raw and FM finish at misfits 468.91 and 2940.65,
+  with 5.18% and 33.59% of active cells clipped. This rejects that radius and
+  implementation for the present setup, not localization as a class.
 - Matérn improves selected UNO coarse-to-full statistics, but not connectivity
   or spanning error, and it does not improve U-Net transfer in this experiment.
 - Every FM model reproduces the supplied synthetic training distribution; it
@@ -350,17 +389,13 @@ geological diagnostics. The complete 12-row matrix is
 
 ## What next
 
-The immediate Egg control is the predeclared `N_a=8` localization matrix: raw
-and FM with the fixed 64 m Gaspari--Cohn radius, plus the unlocalized
-200-member raw control and explicitly unlocalized PCA. This tests whether the
-matched-misfit FM advantage survives a treatment designed to suppress
-spurious long-range covariance. It must be completed before treating the
-present positive result as robust.
-
-Next, repeat selected `N_a=8` comparisons over multiple assimilation seeds,
-observation-noise seeds, and held-out truths. A replicated ensemble-size study
-is needed to distinguish the unexplained N=200 trajectory from a systematic
-effect. Only then should decoder architecture or latent-rank remedies be
-tuned. In parallel, PUNQ remains gated on reproducing the published truth
-forecast with an explicit OPM-compatible well-cutback schedule. Source and
-cross-resolution extensions are secondary to these inversion-validity checks.
+G4 is complete. The next publication-strength step is to repeat selected
+`N_a=8` Raw, PCA, and FM comparisons over multiple assimilation seeds,
+observation-noise seeds, and held-out truths. This is needed to distinguish a
+repeatable FM-specific failure mode from one non-monotone stochastic ES-MDA
+trajectory. A localization-radius sweep may be useful only as an explicitly
+exploratory or preregistered follow-up; tuning a radius against this one truth
+would not establish robustness. Decoder architecture and latent-rank remedies
+should likewise wait for replication. In parallel, PUNQ remains gated on
+reproducing the published truth forecast with an explicit OPM-compatible
+well-cutback schedule.
