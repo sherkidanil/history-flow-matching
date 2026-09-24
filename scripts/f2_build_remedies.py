@@ -32,9 +32,7 @@ def _load_report(path: Path) -> dict[str, Any]:
 
 def _last_stage(handle: h5py.File) -> str:
     stages = sorted(
-        (int(name.removeprefix("stage_")), name)
-        for name in handle
-        if name.startswith("stage_")
+        (int(name.removeprefix("stage_")), name) for name in handle if name.startswith("stage_")
     )
     if not stages:
         raise ValueError("inversion artifact contains no stages")
@@ -62,6 +60,9 @@ def _build_rows(
         report_path = reports[variant]
         report = _load_report(report_path)
         method = str(report["method"])
+        logk_bounds = report.get("logk_bounds")
+        lower_bound = None if logk_bounds is None else float(logk_bounds[0])
+        upper_bound = None if logk_bounds is None else float(logk_bounds[1])
         artifact_hash = sha256_file(artifact_path)
         if method not in METHODS:
             raise ValueError(f"unsupported inversion method: {method}")
@@ -71,9 +72,7 @@ def _build_rows(
         with h5py.File(artifact_path) as handle:
             if str(handle.attrs["method"]) != method:
                 raise ValueError("remedy artifact method does not match its input label")
-            parameterization_label = str(
-                handle.attrs.get("parameterization_label", method)
-            )
+            parameterization_label = str(handle.attrs.get("parameterization_label", method))
             stage_name = _last_stage(handle)
             group = handle[stage_name]
             fields = np.asarray(group["logk"], dtype=np.float64)
@@ -105,24 +104,21 @@ def _build_rows(
                 "localization_enabled": report["localization_enabled"],
                 "localization_radius_m": report["localization_radius_m"],
                 "latent_rank": report["latent_rank"],
+                "logk_lower_bound": lower_bound,
+                "logk_upper_bound": upper_bound,
                 "ensemble_size": len(fields),
                 **summary,
                 "P10_P90_width": interval_width(
                     float(summary["fopt_p10"]), float(summary["fopt_p90"])
                 ),
-                "fopt_crps": crps_ensemble(
-                    fopt, observation=float(report["truth_terminal_fopt"])
-                ),
+                "fopt_crps": crps_ensemble(fopt, observation=float(report["truth_terminal_fopt"])),
                 "normalized_observation_energy_score": energy_score(
                     simulated / sigma[None, :], observation=truth_data / sigma
                 ),
                 "mean_field_spread": final_report["mean_field_spread"],
-                "relative_field_shift_from_prior": final_report[
-                    "relative_field_shift_from_prior"
-                ],
-                "effective_ensemble_members": final_report[
-                    "effective_ensemble_members"
-                ],
+                "relative_field_shift_from_prior": final_report["relative_field_shift_from_prior"],
+                "effective_ensemble_members": final_report["effective_ensemble_members"],
+                "clipped_fraction": float(final_report.get("clipped_fraction", 0.0)),
                 "n_sim": report["n_sim"],
                 "n_failed": report["n_failed"],
                 "source_report": report_path.as_posix(),
@@ -198,9 +194,7 @@ def main() -> int:
     truth = load_egg_ensemble(args.realizations_dir)[
         config.truth_realization - 1 : config.truth_realization
     ]
-    wells = parse_egg_well_locations(
-        args.deck.read_text(encoding="utf-8", errors="replace")
-    )
+    wells = parse_egg_well_locations(args.deck.read_text(encoding="utf-8", errors="replace"))
     pair_count = len([name for name in wells if name.startswith("INJECT")]) * len(
         [name for name in wells if name.startswith("PROD")]
     )

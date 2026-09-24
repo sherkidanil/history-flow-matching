@@ -17,9 +17,7 @@ from f2_build_remedies import _build_rows, _map_inversions, _map_reports  # noqa
 sys.path.pop(0)
 
 
-def _write_inputs(
-    root: Path, method: str, label: str | None = None
-) -> tuple[Path, Path]:
+def _write_inputs(root: Path, method: str, label: str | None = None) -> tuple[Path, Path]:
     resolved_label = method if label is None else label
     artifact = root / f"{resolved_label}.h5"
     fields = np.asarray(
@@ -53,6 +51,7 @@ def _write_inputs(
                 "localization_enabled": False,
                 "localization_radius_m": None,
                 "latent_rank": None,
+                "logk_bounds": [2.0, 11.0],
                 "n_sim": 900,
                 "n_failed": 0,
                 "truth_terminal_fopt": 2.5,
@@ -67,6 +66,7 @@ def _write_inputs(
                         "mean_field_spread": 0.5,
                         "relative_field_shift_from_prior": 0.25,
                         "effective_ensemble_members": 3.0,
+                        "clipped_fraction": 0.125,
                     }
                 ],
             }
@@ -97,6 +97,9 @@ def test_build_remedy_rows_combines_science_collapse_and_provenance(
     assert all(row["n_assimilations"] == 8 for row in rows)
     assert all(row["ensemble_size"] == 4 for row in rows)
     assert all(row["effective_ensemble_members"] == 3.0 for row in rows)
+    assert all(row["logk_lower_bound"] == 2.0 for row in rows)
+    assert all(row["logk_upper_bound"] == 11.0 for row in rows)
+    assert all(row["clipped_fraction"] == 0.125 for row in rows)
     assert all(row["source_git_commit"] == "c" * 40 for row in rows)
     assert all(row["derived_git_commit"] == "d" * 40 for row in rows)
 
@@ -136,8 +139,7 @@ def test_build_remedy_rows_accepts_two_labeled_raw_variants(tmp_path: Path) -> N
 
 def test_cli_maps_multiple_fm_runs_by_parameterization_label(tmp_path: Path) -> None:
     inputs = [
-        _write_inputs(tmp_path, "fm", label)
-        for label in ("fm_na8", "fm_na16", "fm_na8_n200")
+        _write_inputs(tmp_path, "fm", label) for label in ("fm_na8", "fm_na16", "fm_na8_n200")
     ]
 
     inversions = _map_inversions([artifact for artifact, _ in inputs])
