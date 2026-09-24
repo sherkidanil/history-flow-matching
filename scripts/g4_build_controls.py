@@ -6,6 +6,7 @@ import argparse
 import json
 import subprocess
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TypedDict
 
@@ -20,21 +21,55 @@ from fmgeo.forward.egg import EGG_PRODUCERS, parse_egg_well_locations
 from fmgeo.inverse.egg import load_egg_inversion_config
 from fmgeo.plotting import save_vector_figure
 
-G4_VARIANTS = (
-    "raw_na8",
-    "pca_na8",
-    "fm_na8",
-    "raw_na8_localized",
-    "fm_na8_localized",
-    "raw_na8_n200",
-)
+
+@dataclass(frozen=True)
+class G4VariantSpec:
+    method: str
+    ensemble_size: int
+    bounded: bool
+    localized: bool
+    color: str
+    label: str
+
+
+G4_SPECS = {
+    "raw_na8": G4VariantSpec("raw", 100, False, False, "#440154", "Raw, N=100"),
+    "pca_na8": G4VariantSpec("pca", 100, False, False, "#21918c", "PCA, N=100"),
+    "fm_na8": G4VariantSpec("fm", 100, False, False, "#d49b00", "FM, N=100"),
+    "raw_na8_bounded": G4VariantSpec(
+        "raw", 100, True, False, "#482878", "Raw bounded, N=100"
+    ),
+    "pca_na8_bounded": G4VariantSpec(
+        "pca", 100, True, False, "#35b779", "PCA bounded, N=100"
+    ),
+    "fm_na8_bounded": G4VariantSpec(
+        "fm", 100, True, False, "#f0c808", "FM bounded, N=100"
+    ),
+    "raw_na8_localized": G4VariantSpec(
+        "raw", 100, True, True, "#7e1e9c", "Raw bounded + localized, N=100"
+    ),
+    "pca_na8_localized": G4VariantSpec(
+        "pca", 100, True, True, "#00a087", "PCA bounded + localized, N=100"
+    ),
+    "fm_na8_localized": G4VariantSpec(
+        "fm", 100, True, True, "#d95f02", "FM bounded + localized, N=100"
+    ),
+    "raw_na8_n200": G4VariantSpec(
+        "raw", 200, True, False, "#31688e", "Raw bounded, N=200"
+    ),
+    "fm_na8_n200": G4VariantSpec(
+        "fm", 200, True, False, "#e76f51", "FM bounded, N=200"
+    ),
+}
+G4_VARIANTS = tuple(G4_SPECS)
+
 
 
 class G4StageRow(TypedDict):
     variant: str
     stage: int
     mean_normalized_data_misfit: float
-    clipped_fraction: float
+    clipped_fraction: float | None
 
 
 def _stage_rows(reports: Mapping[str, Path]) -> list[G4StageRow]:
@@ -45,15 +80,34 @@ def _stage_rows(reports: Mapping[str, Path]) -> list[G4StageRow]:
     rows: list[G4StageRow] = []
     for variant, path in reports.items():
         report = json.loads(path.read_text(encoding="utf-8"))
+        spec = G4_SPECS[variant]
         if report.get("parameterization_label") != variant:
             raise ValueError(f"G4 report label does not match input variant: {variant}")
-        for stage in report["stages"]:
+        if report.get("method") != spec.method:
+            raise ValueError(f"G4 report method does not match variant: {variant}")
+        if bool(report.get("localization_enabled")) != spec.localized:
+            raise ValueError(f"G4 report localization does not match variant: {variant}")
+        bounds = report.get("logk_bounds")
+        if (bounds is not None) != spec.bounded:
+            raise ValueError(f"G4 report bounds do not match variant: {variant}")
+        if spec.bounded and tuple(float(value) for value in bounds) != (2.0, 11.0):
+            raise ValueError(f"G4 report uses unexpected bounds: {variant}")
+        stages = report["stages"]
+        ensemble_size = report.get("ensemble_size")
+        if ensemble_size is None:
+            ensemble_size = int(report["n_sim"]) // len(stages)
+        if int(ensemble_size) != spec.ensemble_size:
+            raise ValueError(f"G4 report ensemble size does not match variant: {variant}")
+        for stage in stages:
+            clipped = stage.get("clipped_fraction")
+            if spec.bounded and clipped is None:
+                raise ValueError(f"bounded G4 report lacks clipping metadata: {variant}")
             rows.append(
                 {
                     "variant": variant,
                     "stage": int(stage["stage"]),
                     "mean_normalized_data_misfit": float(stage["mean_normalized_data_misfit"]),
-                    "clipped_fraction": float(stage.get("clipped_fraction", 0.0)),
+                    "clipped_fraction": None if not spec.bounded else float(clipped),
                 }
             )
     return rows
@@ -64,22 +118,8 @@ def _plot(rows: list[G4StageRow], svg_path: Path, pdf_path: Path) -> None:
 
     if not rows:
         raise ValueError("G4 trajectory plot requires stage rows")
-    colors = {
-        "raw_na8": "#440154",
-        "pca_na8": "#21918c",
-        "fm_na8": "#d49b00",
-        "raw_na8_localized": "#7e1e9c",
-        "fm_na8_localized": "#d95f02",
-        "raw_na8_n200": "#31688e",
-    }
-    labels = {
-        "raw_na8": "Raw, N=100",
-        "pca_na8": "PCA, N=100",
-        "fm_na8": "FM, N=100",
-        "raw_na8_localized": "Raw localized, N=100",
-        "fm_na8_localized": "FM localized, N=100",
-        "raw_na8_n200": "Raw, N=200",
-    }
+    colors = {variant: spec.color for variant, spec in G4_SPECS.items()}
+    labels = {variant: spec.label for variant, spec in G4_SPECS.items()}
     figure, axes = plt.subplots(1, 2, figsize=(10.5, 4.2), constrained_layout=True)
     for variant in G4_VARIANTS:
         selected = sorted(
@@ -90,8 +130,14 @@ def _plot(rows: list[G4StageRow], svg_path: Path, pdf_path: Path) -> None:
             raise ValueError(f"G4 trajectory plot is missing {variant}")
         stages = [int(row["stage"]) for row in selected]
         misfit = [float(row["mean_normalized_data_misfit"]) for row in selected]
-        clipping = [100.0 * float(row["clipped_fraction"]) for row in selected]
-        linestyle = "--" if "localized" in variant else "-"
+        clipping = [
+            np.nan
+            if row["clipped_fraction"] is None
+            else 100.0 * float(row["clipped_fraction"])
+            for row in selected
+        ]
+        spec = G4_SPECS[variant]
+        linestyle = "--" if spec.localized else ("-." if spec.bounded else "-")
         axes[0].plot(
             stages,
             misfit,
@@ -124,8 +170,8 @@ def _plot(rows: list[G4StageRow], svg_path: Path, pdf_path: Path) -> None:
         axis.grid(alpha=0.25)
         axis.set_xticks(range(9))
     handles, legend_labels = axes[0].get_legend_handles_labels()
-    figure.legend(handles, legend_labels, loc="outside lower center", ncol=3)
-    figure.suptitle("Egg G4 controls: localization destabilizes bounded updates")
+    figure.legend(handles, legend_labels, loc="outside lower center", ncol=4)
+    figure.suptitle("Egg G4 bound, localization, and ensemble-size controls")
     description = json.dumps({"variants": G4_VARIANTS})
     for path in (svg_path, pdf_path):
         save_vector_figure(

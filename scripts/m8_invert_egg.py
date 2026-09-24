@@ -388,6 +388,7 @@ def main() -> int:
             fm_latent_pca=config.fm_latent_pca,
         ),
         "n_assimilations": len(config.inflations),
+        "ensemble_size": config.ensemble_size,
         "localization_enabled": config.localization.enabled,
         "localization_radius_m": (
             config.localization.radius_m if config.localization.enabled else None

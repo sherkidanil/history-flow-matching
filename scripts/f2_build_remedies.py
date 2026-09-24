@@ -118,7 +118,14 @@ def _build_rows(
                 "mean_field_spread": final_report["mean_field_spread"],
                 "relative_field_shift_from_prior": final_report["relative_field_shift_from_prior"],
                 "effective_ensemble_members": final_report["effective_ensemble_members"],
-                "clipped_fraction": float(final_report.get("clipped_fraction", 0.0)),
+                "effective_ensemble_fraction": (
+                    float(final_report["effective_ensemble_members"]) / len(fields)
+                ),
+                "clipped_fraction": (
+                    None
+                    if logk_bounds is None
+                    else float(final_report["clipped_fraction"])
+                ),
                 "n_sim": report["n_sim"],
                 "n_failed": report["n_failed"],
                 "source_report": report_path.as_posix(),

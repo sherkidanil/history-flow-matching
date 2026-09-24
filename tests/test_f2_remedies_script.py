@@ -97,11 +97,34 @@ def test_build_remedy_rows_combines_science_collapse_and_provenance(
     assert all(row["n_assimilations"] == 8 for row in rows)
     assert all(row["ensemble_size"] == 4 for row in rows)
     assert all(row["effective_ensemble_members"] == 3.0 for row in rows)
+    assert all(row["effective_ensemble_fraction"] == 0.75 for row in rows)
     assert all(row["logk_lower_bound"] == 2.0 for row in rows)
     assert all(row["logk_upper_bound"] == 11.0 for row in rows)
     assert all(row["clipped_fraction"] == 0.125 for row in rows)
     assert all(row["source_git_commit"] == "c" * 40 for row in rows)
     assert all(row["derived_git_commit"] == "d" * 40 for row in rows)
+
+
+def test_build_remedy_rows_marks_unbounded_clipping_as_missing(tmp_path: Path) -> None:
+    artifact, report = _write_inputs(tmp_path, "raw")
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    payload["logk_bounds"] = None
+    payload["stages"][0].pop("clipped_fraction")
+    report.write_text(json.dumps(payload), encoding="utf-8")
+
+    row = _build_rows(
+        {"raw": artifact},
+        reports={"raw": report},
+        truth=np.asarray([[[[0.0, 2.0]]]]),
+        active=np.ones((1, 1, 2), dtype=bool),
+        threshold=1.0,
+        wells={"INJECT1": (0, 0), "PROD1": (0, 1)},
+        derived_git_commit="d" * 40,
+    )[0]
+
+    assert row["clipped_fraction"] is None
+    assert row["logk_lower_bound"] is None
+    assert row["logk_upper_bound"] is None
 
 
 def test_build_remedy_rows_accepts_two_labeled_raw_variants(tmp_path: Path) -> None:
