@@ -58,6 +58,7 @@ def linear_response_diagnostic(
     simulated_data: ArrayLike,
     *,
     svd_energy: float = 0.999,
+    fixed_rank: int | None = None,
 ) -> LinearResponseDiagnostic:
     """Measure data variance explained by truncated linear parameter regression."""
 
@@ -82,7 +83,14 @@ def linear_response_diagnostic(
     available_rank = int(np.count_nonzero(singular_values > cutoff))
     if available_rank == 0:
         raise ValueError("parameter anomalies are numerically singular")
-    retained_rank = _energy_rank(singular_values[:available_rank] ** 2, svd_energy)
+    if fixed_rank is None:
+        retained_rank = _energy_rank(singular_values[:available_rank] ** 2, svd_energy)
+    else:
+        if fixed_rank < 1 or fixed_rank > available_rank:
+            raise ValueError(
+                f"fixed rank {fixed_rank} exceeds available rank {available_rank}"
+            )
+        retained_rank = fixed_rank
     response_energy = float(np.sum(data_anomalies**2))
     if not math.isfinite(response_energy) or response_energy <= 0:
         raise ValueError("simulated data anomalies must have positive finite variance")

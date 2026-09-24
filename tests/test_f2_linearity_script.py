@@ -102,3 +102,30 @@ def test_cross_validated_linearity_exposes_in_sample_interpolation() -> None:
         n_folds=5,
         seed=20260915,
     )
+
+
+
+def test_cross_validated_linearity_uses_explicit_common_rank() -> None:
+    rng = np.random.default_rng(20260924)
+    parameters = rng.normal(size=(100, 99))
+    simulated = rng.normal(size=(100, 6))
+
+    scores = _cross_validated_linear_response(
+        parameters,
+        simulated,
+        svd_energy=1.0,
+        n_folds=5,
+        seed=20260915,
+        fixed_rank=79,
+    )
+
+    assert scores.retained_rank == 79
+    with pytest.raises(ValueError, match="available rank"):
+        _cross_validated_linear_response(
+            parameters,
+            simulated,
+            svd_energy=1.0,
+            n_folds=5,
+            seed=20260915,
+            fixed_rank=80,
+        )

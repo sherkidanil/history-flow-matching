@@ -38,9 +38,15 @@ class CrossValidatedLinearResponse:
     mean: float
     std: float
     fold_scores: tuple[float, ...]
+    retained_rank: int
 
 
-def _retained_rank(singular_values: np.ndarray, energy: float) -> int:
+def _retained_rank(
+    singular_values: np.ndarray,
+    energy: float,
+    *,
+    fixed_rank: int | None = None,
+) -> int:
     if not 0.0 < energy <= 1.0:
         raise ValueError("svd_energy must be in (0, 1]")
     cutoff = (
@@ -51,6 +57,12 @@ def _retained_rank(singular_values: np.ndarray, energy: float) -> int:
     available = singular_values[singular_values > cutoff]
     if len(available) == 0:
         raise ValueError("training parameter anomalies are numerically singular")
+    if fixed_rank is not None:
+        if fixed_rank < 1 or fixed_rank > len(available):
+            raise ValueError(
+                f"fixed rank {fixed_rank} exceeds available rank {len(available)}"
+            )
+        return fixed_rank
     cumulative = np.cumsum(available**2) / np.sum(available**2)
     return min(int(np.searchsorted(cumulative, energy, side="left")) + 1, len(available))
 
@@ -62,6 +74,7 @@ def _cross_validated_linear_response(
     svd_energy: float,
     n_folds: int,
     seed: int,
+    fixed_rank: int | None = None,
 ) -> CrossValidatedLinearResponse:
     """Fit truncated linear maps on training folds and score held-out members."""
 
@@ -76,6 +89,7 @@ def _cross_validated_linear_response(
     permutation = np.random.default_rng(seed).permutation(len(model))
     folds = np.array_split(permutation, n_folds)
     scores: list[float] = []
+    retained_ranks: list[int] = []
     all_indices = np.arange(len(model))
     for held_out in folds:
         training = np.setdiff1d(all_indices, held_out, assume_unique=True)
@@ -86,7 +100,12 @@ def _cross_validated_linear_response(
         left, singular_values, right = np.linalg.svd(
             model_anomalies, full_matrices=False
         )
-        rank = _retained_rank(singular_values, svd_energy)
+        rank = _retained_rank(
+            singular_values,
+            svd_energy,
+            fixed_rank=fixed_rank,
+        )
+        retained_ranks.append(rank)
         coefficients = (
             right[:rank].T
             @ ((left[:, :rank].T @ data_anomalies) / singular_values[:rank, None])
@@ -105,6 +124,7 @@ def _cross_validated_linear_response(
         mean=float(np.mean(scores)),
         std=float(np.std(scores, ddof=1)),
         fold_scores=tuple(float(score) for score in scores),
+        retained_rank=min(retained_ranks),
     )
 
 
@@ -129,6 +149,7 @@ def _build_diagnostics(
     n_folds: int,
     fold_seed: int,
     derived_git_commit: str,
+    common_rank: int | None = None,
     decoder_metadata: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[list[dict[str, object]], dict[str, Any]]:
     """Build one stable diagnostic schema from existing inversion stages."""
@@ -174,6 +195,7 @@ def _build_diagnostics(
                 parameters,
                 simulated,
                 svd_energy=svd_energy,
+                fixed_rank=common_rank,
             )
             cross_validated = _cross_validated_linear_response(
                 parameters,
@@ -181,6 +203,7 @@ def _build_diagnostics(
                 svd_energy=svd_energy,
                 n_folds=n_folds,
                 seed=fold_seed,
+                fixed_rank=common_rank,
             )
             midpoint_errors = midpoint_nonlinearity(
                 parameters,
@@ -360,6 +383,7 @@ def _build_diagnostics(
         "pair_seed": pair_seed,
         "n_folds": n_folds,
         "fold_seed": fold_seed,
+        "common_rank": common_rank,
         "parameterizations": payload_parameterizations,
         "fm_update_shifts": fm_updates,
         "derived_git_commit": derived_git_commit,
@@ -410,6 +434,7 @@ def main() -> int:
     parser.add_argument("--pair-seed", type=int)
     parser.add_argument("--n-folds", type=int, default=5)
     parser.add_argument("--fold-seed", type=int)
+    parser.add_argument("--common-rank", type=int, default=79)
     parser.add_argument("--device", choices=("auto", "cpu", "mps", "cuda"), default="auto")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--git-commit")
@@ -450,6 +475,7 @@ def main() -> int:
         n_folds=args.n_folds,
         fold_seed=config.seed if args.fold_seed is None else args.fold_seed,
         derived_git_commit=args.git_commit or _git_commit(),
+        common_rank=args.common_rank,
         decoder_metadata={"fm": fm_metadata},
     )
     _write_csv(args.output_table, rows)
