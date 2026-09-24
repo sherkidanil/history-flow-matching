@@ -29,7 +29,9 @@ from fmgeo.forward.egg import (
 from fmgeo.inverse.diagnostics import ensemble_collapse_diagnostics
 from fmgeo.inverse.egg import (
     EggAssimilationStage,
+    EggDecodedFields,
     EggInversionConfig,
+    decode_bounded_fields,
     load_egg_inversion_config,
     run_egg_esmda,
 )
@@ -191,6 +193,17 @@ def main() -> int:
         else:
             decode = fm_decode
 
+    decoder: Callable[[np.ndarray], np.ndarray | EggDecodedFields] = decode
+    bound_policy = None
+    if config.logk_bounds is not None:
+        decoder = partial(
+            decode_bounded_fields,
+            decode=decode,
+            bounds=config.logk_bounds,
+            active=active,
+        )
+        bound_policy = "decoded_field_clamp"
+
     truth = extract_egg_observations(
         args.truth_case,
         history_end_day=config.history_end_day,
@@ -241,6 +254,7 @@ def main() -> int:
         "simulator_id": args.simulator_id,
         "localization": config.localization,
         "fm_latent_pca": config.fm_latent_pca,
+        "bound_policy": bound_policy,
         **parameterization,
     }
     if args.parameterization_label is not None:
@@ -270,12 +284,13 @@ def main() -> int:
             if config.logk_bounds is not None
             else np.asarray([], dtype=np.float64)
         )
+        output.attrs["bound_policy"] = "" if bound_policy is None else bound_policy
         output.create_dataset("truth_data", data=truth_data.astype(np.float32))
         output.create_dataset("observation", data=observation.astype(np.float32))
         output.create_dataset("sigma", data=sigma.astype(np.float32))
         stages = run_egg_esmda(
             initial_parameters,
-            decode=decode,
+            decode=decoder,
             evaluator=evaluator,
             observation=observation,
             observation_covariance=covariance,
@@ -284,8 +299,6 @@ def main() -> int:
             workers=config.workers,
             svd_energy=config.svd_energy,
             localization=localization,
-            field_bounds=config.logk_bounds,
-            active=active if config.logk_bounds is not None else None,
             on_stage=partial(_write_stage, output),
         )
         prior_fields = stages[0].fields
@@ -365,6 +378,7 @@ def main() -> int:
         ),
         "latent_rank": latent_rank,
         "logk_bounds": config.logk_bounds,
+        "bound_policy": bound_policy,
         "n_sim": sum(len(stage.fields) for stage in stages),
         "n_failed": sum(int(np.sum(stage.forward.status != "ok")) for stage in stages),
         "stages": stage_reports,

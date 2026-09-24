@@ -145,6 +145,39 @@ def evaluate_egg_ensemble(
 
 
 @dataclass(frozen=True)
+class EggDecodedFields:
+    """Effective decoded fields and metadata used by the forward model."""
+
+    fields: NDArray[np.float64]
+    clipped_fraction: float = 0.0
+
+
+def decode_bounded_fields(
+    parameters: NDArray[np.float64],
+    *,
+    decode: Callable[[NDArray[np.float64]], NDArray[np.float64]],
+    bounds: tuple[float, float],
+    active: ArrayLike,
+) -> EggDecodedFields:
+    """Decode parameters and clamp active values as part of the decoder."""
+
+    fields = np.asarray(decode(parameters), dtype=np.float64)
+    active_mask = np.asarray(active, dtype=bool)
+    if fields.ndim != 4 or fields.shape[0] != len(parameters):
+        raise ValueError("decoded fields must have ensemble-first 4D shape")
+    if fields.shape[1:] != active_mask.shape:
+        raise ValueError("active mask shape must match decoded fields")
+    lower, upper = bounds
+    if not np.isfinite((lower, upper)).all() or lower >= upper:
+        raise ValueError("field bounds must be finite with lower less than upper")
+    active_values = fields[:, active_mask]
+    clipped_fraction = float(np.mean((active_values < lower) | (active_values > upper)))
+    bounded = fields.copy()
+    bounded[:, active_mask] = np.clip(active_values, lower, upper)
+    return EggDecodedFields(fields=bounded, clipped_fraction=clipped_fraction)
+
+
+@dataclass(frozen=True)
 class EggAssimilationStage:
     """One complete, index-stable ES-MDA stage."""
 
@@ -157,7 +190,9 @@ class EggAssimilationStage:
 def run_egg_esmda(
     initial_parameters: ArrayLike,
     *,
-    decode: Callable[[NDArray[np.float64]], NDArray[np.float64]],
+    decode: Callable[
+        [NDArray[np.float64]], NDArray[np.float64] | EggDecodedFields
+    ],
     evaluator: Callable[[NDArray[np.float64]], ForwardResult],
     observation: ArrayLike,
     observation_covariance: ArrayLike,
@@ -166,8 +201,6 @@ def run_egg_esmda(
     workers: int,
     svd_energy: float,
     localization: ArrayLike | None = None,
-    field_bounds: tuple[float, float] | None = None,
-    active: ArrayLike | None = None,
     on_stage: Callable[[int, EggAssimilationStage], None] | None = None,
 ) -> tuple[EggAssimilationStage, ...]:
     """Run all ES-MDA stages, refusing to silently discard failed members."""
@@ -176,23 +209,21 @@ def run_egg_esmda(
     parameters = np.asarray(initial_parameters, dtype=np.float64)
     if parameters.ndim != 2 or parameters.shape[0] < 2 or not np.all(np.isfinite(parameters)):
         raise ValueError("initial parameters must be a finite ensemble-first matrix")
-    if (field_bounds is None) != (active is None):
-        raise ValueError("field bounds and active mask must be supplied together")
-    active_mask = None if active is None else np.asarray(active, dtype=bool)
     stages: list[EggAssimilationStage] = []
     for stage_index in range(len(inflation_schedule) + 1):
-        fields = np.asarray(decode(parameters), dtype=np.float64)
+        decoded = decode(parameters)
+        if isinstance(decoded, EggDecodedFields):
+            fields = np.asarray(decoded.fields, dtype=np.float64)
+            clipped_fraction = decoded.clipped_fraction
+        else:
+            fields = np.asarray(decoded, dtype=np.float64)
+            clipped_fraction = 0.0
         if fields.ndim != 4 or fields.shape[0] != len(parameters):
             raise ValueError("decoded fields must have ensemble-first 4D shape")
-        clipped_fraction = 0.0
-        if field_bounds is not None and active_mask is not None:
-            if fields.shape[1:] != active_mask.shape:
-                raise ValueError("active mask shape must match decoded fields")
-            active_values = fields[:, active_mask]
-            lower, upper = field_bounds
-            clipped_fraction = float(np.mean((active_values < lower) | (active_values > upper)))
-            fields = fields.copy()
-            fields[:, active_mask] = np.clip(active_values, lower, upper)
+        if not np.all(np.isfinite(fields)):
+            raise ValueError("decoded fields must be finite")
+        if not 0.0 <= clipped_fraction <= 1.0:
+            raise ValueError("clipped fraction must be between zero and one")
         forward = evaluate_egg_ensemble(fields, evaluator=evaluator, workers=workers)
         failed = np.flatnonzero(forward.status != "ok")
         stage = EggAssimilationStage(
