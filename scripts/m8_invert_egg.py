@@ -35,7 +35,10 @@ from fmgeo.inverse.egg import (
     load_egg_inversion_config,
     run_egg_esmda,
 )
-from fmgeo.inverse.localization import well_observation_localization
+from fmgeo.inverse.localization import (
+    project_localization_to_pca,
+    well_observation_localization,
+)
 from fmgeo.metrics.uq import coverage, forecast_quantiles
 from fmgeo.param.pca import PCAParameterization
 
@@ -70,8 +73,6 @@ def _remedy_name(
 
 
 def _validate_remedy(method: Method, config: EggInversionConfig) -> None:
-    if method == "pca" and config.localization.enabled:
-        raise ValueError("spatial localization is not applicable to PCA coefficients")
     if method != "fm" and config.fm_latent_pca:
         raise ValueError("FM latent PCA reduction requires method=fm")
     if config.localization.enabled and config.fm_latent_pca:
@@ -140,6 +141,7 @@ def main() -> int:
         raise ValueError("prior artifact has fewer fields than the configured ensemble")
 
     parameterization: dict[str, object] = {}
+    pca_components: np.ndarray | None = None
     decode: Callable[[np.ndarray], np.ndarray]
     if method == "raw":
         initial_parameters = initial_fields[:, active]
@@ -149,6 +151,7 @@ def main() -> int:
             initial_fields[:, active], variance_fraction=config.pca_variance_fraction
         )
         initial_parameters = pca.encode(initial_fields[:, active])
+        pca_components = pca.components
 
         def decode(parameters: np.ndarray) -> np.ndarray:
             return embed_active(pca.decode(parameters), active)
@@ -219,16 +222,25 @@ def main() -> int:
     observation = truth_data + np.random.default_rng(observation_seed).normal(scale=sigma)
     covariance = np.diag(sigma**2)
     localization = None
+    localization_projection = None
     if config.localization.enabled:
         deck = (args.template_dir / "EGG.DATA").read_text(encoding="utf-8", errors="replace")
         well_locations = parse_egg_well_locations(deck)
-        localization = well_observation_localization(
+        cell_localization = well_observation_localization(
             active,
             producer_locations_yx=tuple(well_locations[name] for name in EGG_PRODUCERS),
             observation_times=int(round(config.history_end_day / config.observation_interval_days)),
             cell_size_yx_m=config.localization.cell_size_yx_m,
             radius_m=config.localization.radius_m,
         )
+        if method == "pca":
+            if pca_components is None:
+                raise RuntimeError("PCA localization requires fitted components")
+            localization = project_localization_to_pca(cell_localization, pca_components)
+            localization_projection = "pca_squared_loading_projection"
+        else:
+            localization = cell_localization
+            localization_projection = "cell_space"
     evaluator = partial(
         run_egg_forward,
         template_dir=args.template_dir,
@@ -253,6 +265,7 @@ def main() -> int:
         "prior_sha256": sha256_file(args.prior_fields),
         "simulator_id": args.simulator_id,
         "localization": config.localization,
+        "localization_projection": localization_projection,
         "fm_latent_pca": config.fm_latent_pca,
         "bound_policy": bound_policy,
         **parameterization,
@@ -277,6 +290,9 @@ def main() -> int:
         output.attrs["localization_enabled"] = config.localization.enabled
         output.attrs["localization_radius_m"] = (
             config.localization.radius_m if config.localization.enabled else np.nan
+        )
+        output.attrs["localization_projection"] = (
+            "" if localization_projection is None else localization_projection
         )
         output.attrs["latent_rank"] = 0 if latent_rank is None else latent_rank
         output.attrs["logk_bounds"] = (
@@ -376,6 +392,7 @@ def main() -> int:
         "localization_radius_m": (
             config.localization.radius_m if config.localization.enabled else None
         ),
+        "localization_projection": localization_projection,
         "latent_rank": latent_rank,
         "logk_bounds": config.logk_bounds,
         "bound_policy": bound_policy,

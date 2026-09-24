@@ -67,3 +67,27 @@ def well_observation_localization(
     per_well = gaspari_cohn(distances, half_width=radius_m)
     one_rate = np.repeat(per_well, observation_times, axis=1)
     return np.tile(one_rate, (1, rate_types))
+
+
+
+def project_localization_to_pca(
+    cell_localization: ArrayLike,
+    components: ArrayLike,
+) -> NDArray[np.float64]:
+    """Project cell tapers to PCA coordinates using squared loading weights."""
+
+    taper = np.asarray(cell_localization, dtype=np.float64)
+    basis = np.asarray(components, dtype=np.float64)
+    if taper.ndim != 2 or basis.ndim != 2:
+        raise ValueError("localization and PCA components must be matrices")
+    if basis.shape[1] != taper.shape[0]:
+        raise ValueError("PCA and localization cell dimensions must match")
+    if not np.all(np.isfinite(taper)) or not np.all(np.isfinite(basis)):
+        raise ValueError("localization and PCA components must be finite")
+    if np.any((taper < 0.0) | (taper > 1.0)):
+        raise ValueError("localization values must be between zero and one")
+    weights = basis**2
+    totals = weights.sum(axis=1, keepdims=True)
+    if np.any(totals <= 0.0):
+        raise ValueError("PCA components must have non-zero loading norm")
+    return np.asarray((weights / totals) @ taper, dtype=np.float64)

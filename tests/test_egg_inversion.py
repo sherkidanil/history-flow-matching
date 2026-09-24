@@ -18,7 +18,7 @@ from fmgeo.inverse.egg import (
 repository = Path(__file__).parents[1]
 sys.path.insert(0, str(repository / "scripts"))
 from egg_flow_adapter import compatible_fm_config_hashes, embed_active  # noqa: E402
-from m8_invert_egg import _resolve_parameterization_label  # noqa: E402
+from m8_invert_egg import _resolve_parameterization_label, _validate_remedy  # noqa: E402
 from m8_train_egg import load_fm_config  # noqa: E402
 
 sys.path.pop(0)
@@ -80,6 +80,17 @@ def test_parameterization_label_defaults_to_method_and_accepts_fm_variant() -> N
 def test_parameterization_label_rejects_empty_value() -> None:
     with pytest.raises(ValueError, match="non-empty"):
         _resolve_parameterization_label("fm", "  ")
+
+
+def test_pca_accepts_projected_spatial_localization(tmp_path: Path) -> None:
+    config = load_egg_inversion_config(_write_config(tmp_path / "inversion.yaml"))
+    localized = config.model_copy(
+        update={
+            "localization": config.localization.model_copy(update={"enabled": True})
+        }
+    )
+
+    _validate_remedy("pca", localized)
 
 
 def test_embed_active_preserves_parameter_order() -> None:
