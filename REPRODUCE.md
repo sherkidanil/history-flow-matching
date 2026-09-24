@@ -236,7 +236,8 @@ uv run python scripts/f2_linearity_diagnostics.py \
   --pair-seed 20260915 \
   --n-folds 5 \
   --fold-seed 20260915 \
-  --device auto \
+  --common-rank 79 \
+  --device cpu \
   --output-table results/tables/f2_linearity.csv \
   --output-json results/raw/f2_linearity.json
 ```
@@ -579,25 +580,90 @@ uv run python scripts/m9_build_resolution_ablation.py \
   --pdf-output results/figures/ablation_resolution.pdf
 ```
 
-## G4 bounded localization controls
+## G4 bound and localization controls
 
-The first `raw_na8_localized` attempt was stopped at ES-MDA stage 2 after the
-localized update expanded active-cell `log(k)` to `[-67.6, 83.6]`: 30 OPM Flow
-runs failed nonlinear convergence and 39 timed out. The amended G4 protocol
-clips decoded active-cell fields to the predeclared simulator-safe interval
-`[2, 11]`, which contains the complete successful Raw Na=8 range. HDF5 stage
-attributes and JSON stage records expose the fraction clipped.
-The failed-run counts, artifact checksum, and bounded replay evidence are retained
-in `results/raw/g4_localization_failure.json`.
+The failed unbounded Raw-localized attempt is retained only as failure evidence.
+At stage 2 its active-cell log(k) range reached [-67.6, 83.6]: 30 OPM Flow
+runs failed nonlinear convergence and 39 timed out. Two representative failed
+members, one timeout and one nonlinear failure, were replayed successfully with
+the bound. This is not a replay of all 69 failed members. The evidence and full
+provenance are in results/raw/g4_localization_failure.json.
 
-Use `configs/egg/inversion_na8_localized.yaml` for both bounded Raw and bounded
-FM localization controls. Use
-`configs/egg/inversion_na8_ensemble200_bounded.yaml` for the bounded Raw N=200
-control; the original unbounded N=200 configuration remains unchanged for
-provenance.
+The bounded protocol defines [2, 11] as part of the deterministic decoder:
+parameters map to decoded fields, active cells are clamped, and that exact
+effective field is stored and sent to OPM Flow. This is a nonlinear
+decoded-field clamp, not a constrained ES-MDA update.
 
-After the three inversion artifacts and reports are present, build the
-six-variant provenance table and deterministic vector figure with:
+The published controls were generated from analysis commit
+5b1bb96ec84d9c204ad997911bbb8f05e5d8c022. Set a Docker-visible work root and
+run the complete matrix with:
+
+```bash
+RUN_COMMIT=5b1bb96ec84d9c204ad997911bbb8f05e5d8c022
+WORK_ROOT=/path/on/docker/filesystem/fmgeo
+COMMON=(
+  --strategy augmentation
+  --prior-fields artifacts/egg_fm_samples_augmentation_1000.h5
+  --truth-case scratch/egg_truth_perm100/EGG
+  --template-dir scratch/egg_truth_perm100
+  --flow-command scripts/flow_docker.sh
+  --simulator-id "OPM Flow 2026.04 / openporousmedia/opmreleases:latest"
+  --cache-dir scratch/egg_cache
+  --git-commit "$RUN_COMMIT"
+)
+
+run_plain() {
+  METHOD=$1
+  LABEL=$2
+  CONFIG=$3
+  uv run python scripts/m8_invert_egg.py \
+    --method "$METHOD" --parameterization-label "$LABEL" \
+    --config "$CONFIG" "${COMMON[@]}" \
+    --work-root "$WORK_ROOT/$LABEL" \
+    --output "artifacts/egg_inversion_augmentation_$LABEL.h5" \
+    --manifest "artifacts/g4_$LABEL.manifest.json" \
+    --report "results/raw/egg_inversion_augmentation_$LABEL.json" \
+    --device cpu
+}
+
+run_fm() {
+  LABEL=$1
+  CONFIG=$2
+  uv run python scripts/m8_invert_egg.py \
+    --method fm --parameterization-label "$LABEL" \
+    --config "$CONFIG" "${COMMON[@]}" \
+    --fm-config configs/egg/fm_train.yaml \
+    --checkpoint artifacts/egg_models/augmentation/ema.pt \
+    --training-data artifacts/egg_augmentation_5000.h5 \
+    --work-root "$WORK_ROOT/$LABEL" \
+    --output "artifacts/egg_inversion_augmentation_$LABEL.h5" \
+    --manifest "artifacts/g4_$LABEL.manifest.json" \
+    --report "results/raw/egg_inversion_augmentation_$LABEL.json" \
+    --device cpu --batch-size 16
+}
+
+run_plain raw raw_na8 configs/egg/inversion_na8.yaml
+run_plain pca pca_na8 configs/egg/inversion_na8.yaml
+run_fm fm_na8 configs/egg/inversion_na8.yaml
+
+run_plain raw raw_na8_bounded configs/egg/inversion_na8_bounded.yaml
+run_plain pca pca_na8_bounded configs/egg/inversion_na8_bounded.yaml
+run_fm fm_na8_bounded configs/egg/inversion_na8_bounded.yaml
+
+run_plain raw raw_na8_localized configs/egg/inversion_na8_localized.yaml
+run_plain pca pca_na8_localized configs/egg/inversion_na8_localized.yaml
+run_fm fm_na8_localized configs/egg/inversion_na8_localized.yaml
+
+run_plain raw raw_na8_n200 configs/egg/inversion_na8_ensemble200_bounded.yaml
+run_fm fm_na8_n200 configs/egg/inversion_na8_ensemble200_bounded.yaml
+```
+
+PCA localization is the squared-loading-weighted projection of the same
+cell-to-observation Gaspari-Cohn taper used for Raw and FM. Reports record the
+projection as pca_squared_loading_projection.
+
+After all eleven artifacts and reports are present, build the provenance table
+and deterministic vector figure with:
 
 ```bash
 uv run python scripts/g4_build_controls.py \
@@ -609,22 +675,31 @@ uv run python scripts/g4_build_controls.py \
   --inversion raw_na8=artifacts/egg_inversion_augmentation_raw_na8.h5 \
   --inversion pca_na8=artifacts/egg_inversion_augmentation_pca_na8.h5 \
   --inversion fm_na8=artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion raw_na8_bounded=artifacts/egg_inversion_augmentation_raw_na8_bounded.h5 \
+  --inversion pca_na8_bounded=artifacts/egg_inversion_augmentation_pca_na8_bounded.h5 \
+  --inversion fm_na8_bounded=artifacts/egg_inversion_augmentation_fm_na8_bounded.h5 \
   --inversion raw_na8_localized=artifacts/egg_inversion_augmentation_raw_na8_localized.h5 \
+  --inversion pca_na8_localized=artifacts/egg_inversion_augmentation_pca_na8_localized.h5 \
   --inversion fm_na8_localized=artifacts/egg_inversion_augmentation_fm_na8_localized.h5 \
   --inversion raw_na8_n200=artifacts/egg_inversion_augmentation_raw_na8_n200.h5 \
+  --inversion fm_na8_n200=artifacts/egg_inversion_augmentation_fm_na8_n200.h5 \
   --inversion-report raw_na8=results/raw/egg_inversion_augmentation_raw_na8.json \
   --inversion-report pca_na8=results/raw/egg_inversion_augmentation_pca_na8.json \
   --inversion-report fm_na8=results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report raw_na8_bounded=results/raw/egg_inversion_augmentation_raw_na8_bounded.json \
+  --inversion-report pca_na8_bounded=results/raw/egg_inversion_augmentation_pca_na8_bounded.json \
+  --inversion-report fm_na8_bounded=results/raw/egg_inversion_augmentation_fm_na8_bounded.json \
   --inversion-report raw_na8_localized=results/raw/egg_inversion_augmentation_raw_na8_localized.json \
+  --inversion-report pca_na8_localized=results/raw/egg_inversion_augmentation_pca_na8_localized.json \
   --inversion-report fm_na8_localized=results/raw/egg_inversion_augmentation_fm_na8_localized.json \
   --inversion-report raw_na8_n200=results/raw/egg_inversion_augmentation_raw_na8_n200.json \
+  --inversion-report fm_na8_n200=results/raw/egg_inversion_augmentation_fm_na8_n200.json \
   --table-output results/tables/g4_bounded_controls.csv \
   --figure-output results/figures/g4_bounded_controls.svg \
-  --pdf-output results/figures/g4_bounded_controls.pdf
+  --pdf-output results/figures/g4_bounded_controls.pdf \
+  --git-commit "$RUN_COMMIT"
 ```
 
-Expected outputs are `results/tables/g4_bounded_controls.csv` and
-`results/figures/g4_bounded_controls.{svg,pdf}`. The accepted Raw-localized,
-FM-localized, and Raw-N=200 artifacts have SHA-256 values beginning
-`268f51a0`, `e3a9a70c`, and `c80734c5`; the builder verifies each full digest
-against its JSON report before deriving the outputs.
+The builder verifies every full artifact digest against its JSON report before
+deriving results/tables/g4_bounded_controls.csv and
+results/figures/g4_bounded_controls.{svg,pdf}.

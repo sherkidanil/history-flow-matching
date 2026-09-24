@@ -1,11 +1,11 @@
 {
   "artifact": {
-    "config_hash": "7c92a1a3e266ed0eb8ea7b1e8f36860ba76902ca044d7bf40acf12d8517fd419",
-    "created_at": "2026-09-18T14:59:35.949227Z",
+    "config_hash": "ff28cd59b740901ecc0ca143740c87b007b1407d989feb0a1d5803ba1e3ad5cb",
+    "created_at": "2026-09-24T16:55:38.169214Z",
     "dtype": "float32",
-    "git_commit": "4c8986a3f2cd573d1c8d2b3b2c15a03661eb4cbb",
+    "git_commit": "5b1bb96ec84d9c204ad997911bbb8f05e5d8c022",
     "path": "artifacts/egg_inversion_augmentation_raw_na8_n200.h5",
-    "sha256": "c80734c5debce3173341c899a84d477658862e71d437bb8f24976d8735c65258",
+    "sha256": "2a5fd2a0ed752ab8ad86dfb13da4fac1fde77b42e4293542d2507408c3bf8fad",
     "shape": [
       9,
       200,
@@ -13,12 +13,15 @@
       60,
       60
     ],
-    "size_bytes": 251105498
+    "size_bytes": 251105490
   },
   "benchmark": "Egg",
-  "config_hash": "7c92a1a3e266ed0eb8ea7b1e8f36860ba76902ca044d7bf40acf12d8517fd419",
+  "bound_policy": "decoded_field_clamp",
+  "config_hash": "ff28cd59b740901ecc0ca143740c87b007b1407d989feb0a1d5803ba1e3ad5cb",
+  "ensemble_size": 200,
   "latent_rank": null,
   "localization_enabled": false,
+  "localization_projection": null,
   "localization_radius_m": null,
   "logk_bounds": [
     2.0,
@@ -49,7 +52,7 @@
       "mean_field_spread": 0.7574699734923672,
       "mean_normalized_data_misfit": 140.35772040628493,
       "relative_field_shift_from_prior": 0.0,
-      "runtime_seconds_sum": 7730.250192463398,
+      "runtime_seconds_sum": 12078.238728150725,
       "stage": 0
     },
     {
@@ -66,7 +69,7 @@
       "mean_field_spread": 0.6894206402493787,
       "mean_normalized_data_misfit": 13.417953829089933,
       "relative_field_shift_from_prior": 0.057403243617738825,
-      "runtime_seconds_sum": 7480.961814984679,
+      "runtime_seconds_sum": 12486.645537734032,
       "stage": 1
     },
     {
@@ -83,7 +86,7 @@
       "mean_field_spread": 0.6432930764070338,
       "mean_normalized_data_misfit": 5.627021022265933,
       "relative_field_shift_from_prior": 0.07893736044211944,
-      "runtime_seconds_sum": 7469.951224409044,
+      "runtime_seconds_sum": 10856.86958322674,
       "stage": 2
     },
     {
@@ -100,7 +103,7 @@
       "mean_field_spread": 0.612254937457763,
       "mean_normalized_data_misfit": 3.2903555499887,
       "relative_field_shift_from_prior": 0.09036108839619068,
-      "runtime_seconds_sum": 7513.433504924178,
+      "runtime_seconds_sum": 10795.39857340604,
       "stage": 3
     },
     {
@@ -117,7 +120,7 @@
       "mean_field_spread": 0.5916666391543186,
       "mean_normalized_data_misfit": 2.452833045884392,
       "relative_field_shift_from_prior": 0.0969077762037178,
-      "runtime_seconds_sum": 7462.283402100205,
+      "runtime_seconds_sum": 10826.722996652126,
       "stage": 4
     },
     {
@@ -134,7 +137,7 @@
       "mean_field_spread": 0.5777864956938201,
       "mean_normalized_data_misfit": 2.123769113350694,
       "relative_field_shift_from_prior": 0.10191514652680318,
-      "runtime_seconds_sum": 7477.718255326152,
+      "runtime_seconds_sum": 10996.663370519876,
       "stage": 5
     },
     {
@@ -151,7 +154,7 @@
       "mean_field_spread": 0.5653744364130319,
       "mean_normalized_data_misfit": 1.938138612721966,
       "relative_field_shift_from_prior": 0.1056268687603049,
-      "runtime_seconds_sum": 7449.556214861572,
+      "runtime_seconds_sum": 10987.38089696318,
       "stage": 6
     },
     {
@@ -168,7 +171,7 @@
       "mean_field_spread": 0.5544458405766394,
       "mean_normalized_data_misfit": 1.7735363687762242,
       "relative_field_shift_from_prior": 0.1089954789453604,
-      "runtime_seconds_sum": 7454.590922579169,
+      "runtime_seconds_sum": 10739.283540382981,
       "stage": 7
     },
     {
@@ -185,7 +188,7 @@
       "mean_field_spread": 0.5436017293027487,
       "mean_normalized_data_misfit": 1.6787816593341731,
       "relative_field_shift_from_prior": 0.11168318559426102,
-      "runtime_seconds_sum": 7416.916131049395,
+      "runtime_seconds_sum": 10559.132519856095,
       "stage": 8
     }
   ],

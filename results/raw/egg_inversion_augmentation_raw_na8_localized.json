@@ -1,11 +1,11 @@
 {
   "artifact": {
-    "config_hash": "4f22a43cf477cc781ced317aaad7e0de475cd89cb1ab7d1ea4465f6a6038a419",
-    "created_at": "2026-09-18T13:03:55.936241Z",
+    "config_hash": "aa6773211913526341785bf64569acac9ffc690306d527e8ed8f2a2f2d662172",
+    "created_at": "2026-09-24T15:12:24.295311Z",
     "dtype": "float32",
-    "git_commit": "4c8986a3f2cd573d1c8d2b3b2c15a03661eb4cbb",
+    "git_commit": "5b1bb96ec84d9c204ad997911bbb8f05e5d8c022",
     "path": "artifacts/egg_inversion_augmentation_raw_na8_localized.h5",
-    "sha256": "268f51a07350e2e2b1e76e519f12e746b64908080509a250810c4396098e2138",
+    "sha256": "b0cc4cd45b33d349bc0a8fd6061906e6508c93d0e574a34f88137399fbcc6e01",
     "shape": [
       9,
       100,
@@ -13,12 +13,15 @@
       60,
       60
     ],
-    "size_bytes": 124436877
+    "size_bytes": 124436869
   },
   "benchmark": "Egg",
-  "config_hash": "4f22a43cf477cc781ced317aaad7e0de475cd89cb1ab7d1ea4465f6a6038a419",
+  "bound_policy": "decoded_field_clamp",
+  "config_hash": "aa6773211913526341785bf64569acac9ffc690306d527e8ed8f2a2f2d662172",
+  "ensemble_size": 100,
   "latent_rank": null,
   "localization_enabled": true,
+  "localization_projection": "cell_space",
   "localization_radius_m": 64.0,
   "logk_bounds": [
     2.0,
@@ -49,11 +52,11 @@
       "mean_field_spread": 0.7544718049115351,
       "mean_normalized_data_misfit": 140.0835681330913,
       "relative_field_shift_from_prior": 0.0,
-      "runtime_seconds_sum": 3954.115545988083,
+      "runtime_seconds_sum": 5467.311690330505,
       "stage": 0
     },
     {
-      "cache_hits": 38,
+      "cache_hits": 0,
       "clipped_fraction": 0.0059289602759661515,
       "effective_ensemble_members": 10.369946183832072,
       "fopt": {
@@ -66,7 +69,7 @@
       "mean_field_spread": 0.8393441635949618,
       "mean_normalized_data_misfit": 173.91991357880627,
       "relative_field_shift_from_prior": 0.08933022880497504,
-      "runtime_seconds_sum": 3388.9047895222902,
+      "runtime_seconds_sum": 6398.2277865335345,
       "stage": 1
     },
     {
@@ -83,7 +86,7 @@
       "mean_field_spread": 0.9206499606728092,
       "mean_normalized_data_misfit": 651.3244239632046,
       "relative_field_shift_from_prior": 0.13975412993097858,
-      "runtime_seconds_sum": 4179.482204668224,
+      "runtime_seconds_sum": 6974.880737930536,
       "stage": 2
     },
     {
@@ -100,7 +103,7 @@
       "mean_field_spread": 0.9094003134629469,
       "mean_normalized_data_misfit": 1022.5525181589998,
       "relative_field_shift_from_prior": 0.13929550107408017,
-      "runtime_seconds_sum": 3975.2309681400657,
+      "runtime_seconds_sum": 6537.14806368947,
       "stage": 3
     },
     {
@@ -117,7 +120,7 @@
       "mean_field_spread": 0.9038178744157007,
       "mean_normalized_data_misfit": 777.2503420140788,
       "relative_field_shift_from_prior": 0.12977540578179853,
-      "runtime_seconds_sum": 4194.51416618377,
+      "runtime_seconds_sum": 7499.200285643339,
       "stage": 4
     },
     {
@@ -134,7 +137,7 @@
       "mean_field_spread": 0.9010657297290654,
       "mean_normalized_data_misfit": 578.5462592441235,
       "relative_field_shift_from_prior": 0.1321659271237858,
-      "runtime_seconds_sum": 4123.947737671435,
+      "runtime_seconds_sum": 6733.043299861252,
       "stage": 5
     },
     {
@@ -151,7 +154,7 @@
       "mean_field_spread": 0.9228716540166161,
       "mean_normalized_data_misfit": 597.0774608979086,
       "relative_field_shift_from_prior": 0.15436066920223904,
-      "runtime_seconds_sum": 3663.0279694125056,
+      "runtime_seconds_sum": 6845.720473647118,
       "stage": 6
     },
     {
@@ -168,7 +171,7 @@
       "mean_field_spread": 0.8767756082490819,
       "mean_normalized_data_misfit": 772.2479216161714,
       "relative_field_shift_from_prior": 0.1622399805625743,
-      "runtime_seconds_sum": 4248.015950880945,
+      "runtime_seconds_sum": 6957.027824349701,
       "stage": 7
     },
     {
@@ -185,7 +188,7 @@
       "mean_field_spread": 0.8504715761112349,
       "mean_normalized_data_misfit": 468.90822779422865,
       "relative_field_shift_from_prior": 0.17906405993109603,
-      "runtime_seconds_sum": 4063.965752787888,
+      "runtime_seconds_sum": 7170.477036252618,
       "stage": 8
     }
   ],

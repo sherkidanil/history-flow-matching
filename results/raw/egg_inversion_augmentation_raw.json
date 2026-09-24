@@ -1,11 +1,11 @@
 {
   "artifact": {
-    "config_hash": "91c2172623047b68f8f96f0bd0fcac169bbad20d847d32fe91349a47fdb0510a",
-    "created_at": "2026-09-15T12:45:12.856221Z",
+    "config_hash": "a40fdb92ee4c87a842f0428b992ee516cd96d8d1b0971f8d8f972164314eeaae",
+    "created_at": "2026-09-24T17:24:19.164760Z",
     "dtype": "float32",
-    "git_commit": "ccc14b09e1323023f3f1fd7ec689c2770980b88d",
+    "git_commit": "5b1bb96ec84d9c204ad997911bbb8f05e5d8c022",
     "path": "artifacts/egg_inversion_augmentation_raw.h5",
-    "sha256": "a61d18f63925df4e00e0edc9e0e93d6eba71df202f09fd565519a0f082d9bcef",
+    "sha256": "ea56d9fd0a8ec0638cda460ec47bd87c963ae3dbb24caf41c413c0f6b26cb467",
     "shape": [
       5,
       100,
@@ -13,20 +13,32 @@
       60,
       60
     ],
-    "size_bytes": 69770032
+    "size_bytes": 69771088
   },
   "benchmark": "Egg",
-  "config_hash": "91c2172623047b68f8f96f0bd0fcac169bbad20d847d32fe91349a47fdb0510a",
+  "bound_policy": null,
+  "config_hash": "a40fdb92ee4c87a842f0428b992ee516cd96d8d1b0971f8d8f972164314eeaae",
+  "ensemble_size": 100,
+  "latent_rank": null,
+  "localization_enabled": false,
+  "localization_projection": null,
+  "localization_radius_m": null,
+  "logk_bounds": null,
   "method": "raw",
+  "n_assimilations": 4,
   "n_failed": 0,
   "n_sim": 500,
   "observation_count": 160,
   "observation_noise_seed": 20260915,
   "parameterization": {},
+  "parameterization_label": "raw",
   "prior_sha256": "eff49cf09c0794d4c1d510811820345ae2c1a5fcb8e575c57d7cc7abe563dd48",
+  "remedy": "none",
   "stages": [
     {
       "cache_hits": 100,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 70.78703628841309,
       "fopt": {
         "P10": 495578.478125,
         "P50": 501359.875,
@@ -34,12 +46,16 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.7544718049115351,
       "mean_normalized_data_misfit": 140.0835681330913,
-      "runtime_seconds_sum": 3952.7362031787634,
+      "relative_field_shift_from_prior": 0.0,
+      "runtime_seconds_sum": 5467.311690330505,
       "stage": 0
     },
     {
-      "cache_hits": 100,
+      "cache_hits": 0,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 55.01706880443579,
       "fopt": {
         "P10": 502727.79375,
         "P50": 505965.21875,
@@ -47,12 +63,16 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.6258528877500544,
       "mean_normalized_data_misfit": 12.097668424874742,
-      "runtime_seconds_sum": 3937.993259832263,
+      "relative_field_shift_from_prior": 0.08554852334421938,
+      "runtime_seconds_sum": 6206.931192710996,
       "stage": 1
     },
     {
-      "cache_hits": 100,
+      "cache_hits": 0,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 47.23252941932186,
       "fopt": {
         "P10": 504426.5625,
         "P50": 506197.078125,
@@ -60,12 +80,16 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.5287802249610661,
       "mean_normalized_data_misfit": 4.953322519398936,
-      "runtime_seconds_sum": 3894.471720635891,
+      "relative_field_shift_from_prior": 0.10923182392650808,
+      "runtime_seconds_sum": 5811.014358013868,
       "stage": 2
     },
     {
-      "cache_hits": 100,
+      "cache_hits": 0,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 42.95052014777673,
       "fopt": {
         "P10": 504398.971875,
         "P50": 505487.171875,
@@ -73,12 +97,16 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.46791978609199153,
       "mean_normalized_data_misfit": 3.0222766113639397,
-      "runtime_seconds_sum": 3908.528153255582,
+      "relative_field_shift_from_prior": 0.12461437408010406,
+      "runtime_seconds_sum": 5745.8855645135045,
       "stage": 3
     },
     {
-      "cache_hits": 100,
+      "cache_hits": 0,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 40.23624204243698,
       "fopt": {
         "P10": 504517.8375,
         "P50": 505500.71875,
@@ -86,8 +114,10 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.4209689712366174,
       "mean_normalized_data_misfit": 2.006654981770164,
-      "runtime_seconds_sum": 3925.154904514551,
+      "relative_field_shift_from_prior": 0.131945626989615,
+      "runtime_seconds_sum": 6424.7591725587845,
       "stage": 4
     }
   ],
