@@ -1,9 +1,10 @@
 # History Flow Matching
 
 Research code for evaluating flow-matching parameterizations of geological
-models in ensemble data assimilation. The experiments compare direct log
-permeability, PCA, and flow-matching latent variables on the PUNQ-S3 and Egg
-reservoir benchmarks.
+models in ensemble data assimilation. The validated inversion study compares
+direct log permeability, PCA, and flow-matching latent variables on the Egg
+benchmark. PUNQ-S3 preparation code is included, but its forward model has not
+passed the benchmark-fidelity gate and no PUNQ inversion claim is made.
 
 The project prioritizes reproducibility: experiment parameters are configured
 in YAML, stochastic components use explicit seeds, and reported values are
@@ -14,11 +15,11 @@ derived from provenance-bearing raw artifacts.
 The cross-platform `uv` environment, storage-safe OPM Flow runner, Egg
 raw/PCA/FM inversion, controlled source ablation, and U-Net/UNO
 cross-resolution experiment are implemented with content-addressed artifacts.
-The bounded G4 controls are complete: a 200-member Raw run remains stable,
-while the predeclared fixed 64 m localization destabilizes both Raw and FM.
-M0 is verified against SPE1 with Flow 2026.04. PUNQ-S3 assimilation remains
-blocked because the available truth deck fails the published-FOPT validation
-gate; no PUNQ benchmark result is claimed. Measured details are in
+The G4 controls separate decoded-field bounds, fixed 64 m localization, and
+ensemble size for Raw, PCA, and FM. M0 is verified against SPE1 with Flow
+2026.04. PUNQ-S3 assimilation remains blocked because the available truth deck
+fails the published-FOPT validation gate; no PUNQ benchmark result is claimed.
+Measured details are in
 [`REPORT.md`](REPORT.md), the execution environment is in
 [`ENVIRONMENT.md`](ENVIRONMENT.md), and exact commands are in
 [`REPRODUCE.md`](REPRODUCE.md).
@@ -37,7 +38,7 @@ GitHub-viewable SVG files and matching vector PDFs.
 
 - Egg posterior comparison: [SVG](results/figures/egg_posterior_comparison.svg) · [PDF](results/figures/egg_posterior_comparison.pdf)
 - Egg misfit–geology trade-off: [SVG](results/figures/egg_misfit_geology_tradeoff.svg) · [PDF](results/figures/egg_misfit_geology_tradeoff.pdf)
-- Bounded localization and Raw N=200 controls: [SVG](results/figures/g4_bounded_controls.svg) · [PDF](results/figures/g4_bounded_controls.pdf)
+- Bounds, localization, and ensemble-size controls: [SVG](results/figures/g4_bounded_controls.svg) · [PDF](results/figures/g4_bounded_controls.pdf)
 - Water-cut forecast: [SVG](results/figures/egg_water_cut_forecast.svg) · [PDF](results/figures/egg_water_cut_forecast.pdf)
 - Flow-matching source ablation: [SVG](results/figures/egg_source_ablation.svg) · [PDF](results/figures/egg_source_ablation.pdf)
 - Source inversion comparison: [SVG](results/figures/egg_source_inversions.svg) · [PDF](results/figures/egg_source_inversions.pdf)

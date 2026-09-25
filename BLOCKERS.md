@@ -46,18 +46,21 @@ Entries must be dated and must distinguish measured facts from hypotheses.
   its normalized covariance-system condition number also rebounds from `65.6`
   to values as high as `141`. This is consistent with, but does not prove,
   noisy covariance updates after decoder-limited field displacement.
-- **Unresolved FM ensemble-size anomaly:** `fm_na8_n200` finishes with more
-  effective members (`64.63`) and more ensemble-explained normalized data
-  variance (`0.770`) than `fm_na8` (`27.83` and `0.379`), yet its misfit is
-  worse (`32.107` versus `6.628`). Ensemble collapse alone therefore cannot
+- **Unresolved FM ensemble-size anomaly:** the controlled CPU
+  `fm_na8_n200` run finishes with more effective members (`66.45`) and more
+  ensemble-explained normalized data variance (`0.797`) than `fm_na8`
+  (`29.61` and `0.367`), yet its misfit is worse (`35.655` versus `7.658`).
+  Ensemble collapse alone therefore cannot
   explain why 200 members are worse than 100.
 - **G4 controls (2026-09-18):** The bounded unlocalized Raw N=200 control
   finishes at misfit `1.67878`, retains `85.58` effective members, clips only
   `2.16e-6` of active cells, and covers truth FOPT. Raw N=100 finishes at
   `1.57134`. Thus ensemble size alone does not reproduce the FM anomaly. The
-  fixed 64 m localized Raw and FM controls instead finish at misfits `468.91`
-  and `2940.65`, clip `5.18%` and `33.59%` of active cells, and both miss truth
-  FOPT. All three bounded controls have zero failed simulations.
+  fixed 64 m localized Raw, PCA, and FM controls instead finish at misfits
+  `468.91`, `64.73`, and `3613.38`. Raw and FM clip `5.18%` and `41.95%` of
+  active cells and both miss truth FOPT; PCA clips no cells and covers truth.
+  All complete controls have zero failed simulations. PCA's degradation
+  without clipping independently shows that bounds are not the cause.
 - **Interpretation:** The predeclared 64 m localization is itself unstable for
   this setup and cannot diagnose the FM mechanism. Treat the remaining result
   as a measured FM-specific, non-monotone stochastic ES-MDA outcome pending
@@ -66,19 +69,22 @@ Entries must be dated and must distinguish measured facts from hypotheses.
 - **Sources:** `results/tables/g2_anomaly_diagnostics.csv` and
   `results/tables/g4_bounded_controls.csv`.
 
-### FM assimilation failure is not explained by the in-sample linear-response fit
+### FM assimilation failure is not explained by one linear-response statistic
 
-- **Measured (2026-09-16, before remedy runs):** On the common 100-member Egg
-  stage-0 ensemble, the truncated-SVD linear-response diagnostic gives
-  `R²_lin = 1.0000` for raw, `0.98830` for PCA, and `1.0000` for FM. Thus the
-  proposed low-FM-`R²` mechanism is not supported by this in-sample diagnostic;
-  with up to 99 anomaly directions, it can interpolate the ensemble response.
+- **Measured common-rank fit (2026-09-25):** At rank 79, the largest rank
+  supported by every 80-member training fold, the stage-0 in-sample `R²_lin`
+  is `0.93327` for raw, `0.95894` for PCA, and `0.78165` for FM. Five-fold
+  held-out `R²_oos` is `0.3093 ± 0.0414`, `-0.1528 ± 0.1448`, and
+  `-0.4885 ± 0.2309`, respectively. FM transfers worst at the prior, but PCA
+  is also below zero and all three final-stage held-out values are negative.
+  This diagnostic therefore establishes weak local linear transfer, not an
+  FM-specific causal mechanism.
 - **Measured decoder nonlinearity:** Across 200 fixed random member pairs, the
   FM midpoint-affinity error has P10/P50/P90
-  `0.07577 / 0.08427 / 0.09331`; raw is exactly zero and PCA is below
+  `0.07577 / 0.08427 / 0.09332`; raw is exactly zero and PCA is below
   `1.62e-8`.
 - **Measured update attenuation:** Across the four original FM assimilation
-  steps, relative latent shifts are `0.7324, 0.6012, 0.5069, 0.4561`, while
+  steps, relative latent shifts are `0.73244, 0.6012, 0.5069, 0.4561`, while
   corresponding field shifts are only `0.1156, 0.1020, 0.09381, 0.09029`.
   The field/latent shift ratios are `0.1579–0.1980`.
 - **Interpretation:** Decoder nonlinearity and attenuation are directly
