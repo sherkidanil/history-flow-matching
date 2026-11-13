@@ -234,7 +234,10 @@ uv run python scripts/f2_linearity_diagnostics.py \
   --inversion artifacts/egg_inversion_augmentation_fm.h5 \
   --pair-count 200 \
   --pair-seed 20260915 \
-  --device auto \
+  --n-folds 5 \
+  --fold-seed 20260915 \
+  --common-rank 79 \
+  --device cpu \
   --output-table results/tables/f2_linearity.csv \
   --output-json results/raw/f2_linearity.json
 ```
@@ -282,10 +285,59 @@ uv run python scripts/f2_build_remedies.py \
   --inversion artifacts/egg_inversion_augmentation_raw_na8.h5 \
   --inversion artifacts/egg_inversion_augmentation_pca_na8.h5 \
   --inversion artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na16.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8_n200.h5 \
   --inversion-report results/raw/egg_inversion_augmentation_raw_na8.json \
   --inversion-report results/raw/egg_inversion_augmentation_pca_na8.json \
   --inversion-report results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na16.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8_n200.json \
   --output results/tables/f2_remedies.csv
+```
+
+Build the remedy-stage geology table, the bracketing matched-misfit control,
+and the central deterministic vector figure from the same five artifacts:
+
+```bash
+uv run python scripts/f1_stagewise_geology.py \
+  --config configs/egg/inversion_na8.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
+  --inversion artifacts/egg_inversion_augmentation_raw_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_pca_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na16.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8_n200.h5 \
+  --inversion-report results/raw/egg_inversion_augmentation_raw_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_pca_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na16.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8_n200.json \
+  --stagewise-output results/tables/egg_stagewise_remedies.csv \
+  --matched-output results/tables/egg_matched_misfit_v2.csv \
+  --figure-output results/figures/egg_misfit_geology_tradeoff.svg \
+  --pdf-output results/figures/egg_misfit_geology_tradeoff.pdf
+```
+
+Reproduce the configuration audit and all 40 stagewise G2 diagnostics:
+
+```bash
+uv run python scripts/g2_anomaly_diagnostics.py \
+  --inversion artifacts/egg_inversion_augmentation_fm.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na16.h5 \
+  --inversion artifacts/egg_inversion_augmentation_fm_na8_n200.h5 \
+  --inversion-report results/raw/egg_inversion_augmentation_fm.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na16.json \
+  --inversion-report results/raw/egg_inversion_augmentation_fm_na8_n200.json \
+  --config-map fm=configs/egg/inversion.yaml \
+  --config-map fm_na8=configs/egg/inversion_na8.yaml \
+  --config-map fm_na16=configs/egg/inversion_na16.yaml \
+  --config-map fm_na8_n200=configs/egg/inversion_na8_ensemble200.yaml \
+  --output results/tables/g2_anomaly_diagnostics.csv
 ```
 
 The `N_a=16` gate was fixed before inspecting the eight-step result: run it
@@ -527,3 +579,127 @@ uv run python scripts/m9_build_resolution_ablation.py \
   --figure-output results/figures/ablation_resolution.svg \
   --pdf-output results/figures/ablation_resolution.pdf
 ```
+
+## G4 bound and localization controls
+
+The failed unbounded Raw-localized attempt is retained only as failure evidence.
+At stage 2 its active-cell log(k) range reached [-67.6, 83.6]: 30 OPM Flow
+runs failed nonlinear convergence and 39 timed out. Two representative failed
+members, one timeout and one nonlinear failure, were replayed successfully with
+the bound. This is not a replay of all 69 failed members. The evidence and full
+provenance are in results/raw/g4_localization_failure.json.
+
+The bounded protocol defines [2, 11] as part of the deterministic decoder:
+parameters map to decoded fields, active cells are clamped, and that exact
+effective field is stored and sent to OPM Flow. This is a nonlinear
+decoded-field clamp, not a constrained ES-MDA update.
+
+The published controls were generated from analysis commit
+5b1bb96ec84d9c204ad997911bbb8f05e5d8c022. Set a Docker-visible work root and
+run the complete matrix with:
+
+```bash
+RUN_COMMIT=5b1bb96ec84d9c204ad997911bbb8f05e5d8c022
+WORK_ROOT=/path/on/docker/filesystem/fmgeo
+COMMON=(
+  --strategy augmentation
+  --prior-fields artifacts/egg_fm_samples_augmentation_1000.h5
+  --truth-case scratch/egg_truth_perm100/EGG
+  --template-dir scratch/egg_truth_perm100
+  --flow-command scripts/flow_docker.sh
+  --simulator-id "OPM Flow 2026.04 / openporousmedia/opmreleases:latest"
+  --cache-dir scratch/egg_cache
+  --git-commit "$RUN_COMMIT"
+)
+
+run_plain() {
+  METHOD=$1
+  LABEL=$2
+  CONFIG=$3
+  uv run python scripts/m8_invert_egg.py \
+    --method "$METHOD" --parameterization-label "$LABEL" \
+    --config "$CONFIG" "${COMMON[@]}" \
+    --work-root "$WORK_ROOT/$LABEL" \
+    --output "artifacts/egg_inversion_augmentation_$LABEL.h5" \
+    --manifest "artifacts/g4_$LABEL.manifest.json" \
+    --report "results/raw/egg_inversion_augmentation_$LABEL.json" \
+    --device cpu
+}
+
+run_fm() {
+  LABEL=$1
+  CONFIG=$2
+  uv run python scripts/m8_invert_egg.py \
+    --method fm --parameterization-label "$LABEL" \
+    --config "$CONFIG" "${COMMON[@]}" \
+    --fm-config configs/egg/fm_train.yaml \
+    --checkpoint artifacts/egg_models/augmentation/ema.pt \
+    --training-data artifacts/egg_augmentation_5000.h5 \
+    --work-root "$WORK_ROOT/$LABEL" \
+    --output "artifacts/egg_inversion_augmentation_$LABEL.h5" \
+    --manifest "artifacts/g4_$LABEL.manifest.json" \
+    --report "results/raw/egg_inversion_augmentation_$LABEL.json" \
+    --device cpu --batch-size 16
+}
+
+run_plain raw raw_na8 configs/egg/inversion_na8.yaml
+run_plain pca pca_na8 configs/egg/inversion_na8.yaml
+run_fm fm_na8 configs/egg/inversion_na8.yaml
+
+run_plain raw raw_na8_bounded configs/egg/inversion_na8_bounded.yaml
+run_plain pca pca_na8_bounded configs/egg/inversion_na8_bounded.yaml
+run_fm fm_na8_bounded configs/egg/inversion_na8_bounded.yaml
+
+run_plain raw raw_na8_localized configs/egg/inversion_na8_localized.yaml
+run_plain pca pca_na8_localized configs/egg/inversion_na8_localized.yaml
+run_fm fm_na8_localized configs/egg/inversion_na8_localized.yaml
+
+run_plain raw raw_na8_n200 configs/egg/inversion_na8_ensemble200_bounded.yaml
+run_fm fm_na8_n200 configs/egg/inversion_na8_ensemble200_bounded.yaml
+```
+
+PCA localization is the squared-loading-weighted projection of the same
+cell-to-observation Gaspari-Cohn taper used for Raw and FM. Reports record the
+projection as pca_squared_loading_projection.
+
+After all eleven artifacts and reports are present, build the provenance table
+and deterministic vector figure with:
+
+```bash
+uv run python scripts/g4_build_controls.py \
+  --config configs/egg/inversion_na8.yaml \
+  --deck data/egg/Egg_Model_Data_Files_v2/Eclipse/Egg_Model_ECL.DATA \
+  --realizations-dir data/egg/Egg_Model_Data_Files_v2/Permeability_Realizations \
+  --active-source artifacts/egg_augmentation_5000.h5 \
+  --evaluation-report results/raw/egg_augmentation_evaluation.json \
+  --inversion raw_na8=artifacts/egg_inversion_augmentation_raw_na8.h5 \
+  --inversion pca_na8=artifacts/egg_inversion_augmentation_pca_na8.h5 \
+  --inversion fm_na8=artifacts/egg_inversion_augmentation_fm_na8.h5 \
+  --inversion raw_na8_bounded=artifacts/egg_inversion_augmentation_raw_na8_bounded.h5 \
+  --inversion pca_na8_bounded=artifacts/egg_inversion_augmentation_pca_na8_bounded.h5 \
+  --inversion fm_na8_bounded=artifacts/egg_inversion_augmentation_fm_na8_bounded.h5 \
+  --inversion raw_na8_localized=artifacts/egg_inversion_augmentation_raw_na8_localized.h5 \
+  --inversion pca_na8_localized=artifacts/egg_inversion_augmentation_pca_na8_localized.h5 \
+  --inversion fm_na8_localized=artifacts/egg_inversion_augmentation_fm_na8_localized.h5 \
+  --inversion raw_na8_n200=artifacts/egg_inversion_augmentation_raw_na8_n200.h5 \
+  --inversion fm_na8_n200=artifacts/egg_inversion_augmentation_fm_na8_n200.h5 \
+  --inversion-report raw_na8=results/raw/egg_inversion_augmentation_raw_na8.json \
+  --inversion-report pca_na8=results/raw/egg_inversion_augmentation_pca_na8.json \
+  --inversion-report fm_na8=results/raw/egg_inversion_augmentation_fm_na8.json \
+  --inversion-report raw_na8_bounded=results/raw/egg_inversion_augmentation_raw_na8_bounded.json \
+  --inversion-report pca_na8_bounded=results/raw/egg_inversion_augmentation_pca_na8_bounded.json \
+  --inversion-report fm_na8_bounded=results/raw/egg_inversion_augmentation_fm_na8_bounded.json \
+  --inversion-report raw_na8_localized=results/raw/egg_inversion_augmentation_raw_na8_localized.json \
+  --inversion-report pca_na8_localized=results/raw/egg_inversion_augmentation_pca_na8_localized.json \
+  --inversion-report fm_na8_localized=results/raw/egg_inversion_augmentation_fm_na8_localized.json \
+  --inversion-report raw_na8_n200=results/raw/egg_inversion_augmentation_raw_na8_n200.json \
+  --inversion-report fm_na8_n200=results/raw/egg_inversion_augmentation_fm_na8_n200.json \
+  --table-output results/tables/g4_bounded_controls.csv \
+  --figure-output results/figures/g4_bounded_controls.svg \
+  --pdf-output results/figures/g4_bounded_controls.pdf \
+  --git-commit "$RUN_COMMIT"
+```
+
+The builder verifies every full artifact digest against its JSON report before
+deriving results/tables/g4_bounded_controls.csv and
+results/figures/g4_bounded_controls.{svg,pdf}.

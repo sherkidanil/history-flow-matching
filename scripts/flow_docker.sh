@@ -26,7 +26,7 @@ case_name=${deck_name%.*}
 container=$(docker create "$image" sleep infinity)
 container_workdir=/tmp/fmgeo
 cleanup() {
-  docker rm --force "$container" >/dev/null 2>&1 || true
+  docker rm --force -v "$container" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT HUP INT TERM
 

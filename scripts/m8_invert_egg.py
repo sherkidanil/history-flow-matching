@@ -29,11 +29,16 @@ from fmgeo.forward.egg import (
 from fmgeo.inverse.diagnostics import ensemble_collapse_diagnostics
 from fmgeo.inverse.egg import (
     EggAssimilationStage,
+    EggDecodedFields,
     EggInversionConfig,
+    decode_bounded_fields,
     load_egg_inversion_config,
     run_egg_esmda,
 )
-from fmgeo.inverse.localization import well_observation_localization
+from fmgeo.inverse.localization import (
+    project_localization_to_pca,
+    well_observation_localization,
+)
 from fmgeo.metrics.uq import coverage, forecast_quantiles
 from fmgeo.param.pca import PCAParameterization
 
@@ -68,8 +73,6 @@ def _remedy_name(
 
 
 def _validate_remedy(method: Method, config: EggInversionConfig) -> None:
-    if method == "pca" and config.localization.enabled:
-        raise ValueError("spatial localization is not applicable to PCA coefficients")
     if method != "fm" and config.fm_latent_pca:
         raise ValueError("FM latent PCA reduction requires method=fm")
     if config.localization.enabled and config.fm_latent_pca:
@@ -78,17 +81,14 @@ def _validate_remedy(method: Method, config: EggInversionConfig) -> None:
 
 def _write_stage(handle: h5py.File, index: int, stage: EggAssimilationStage) -> None:
     group = handle.create_group(f"stage_{index}")
+    group.attrs["clipped_fraction"] = stage.clipped_fraction
     group.create_dataset("parameters", data=stage.parameters.astype(np.float32), compression="gzip")
     group.create_dataset("logk", data=stage.fields.astype(np.float32), compression="gzip")
-    group.create_dataset(
-        "simulated_data", data=stage.forward.simulated_data.astype(np.float32)
-    )
+    group.create_dataset("simulated_data", data=stage.forward.simulated_data.astype(np.float32))
     group.create_dataset("fopt", data=stage.forward.fopt.astype(np.float32))
     string_dtype = h5py.string_dtype(encoding="utf-8")
     group.create_dataset("status", data=stage.forward.status.astype(string_dtype))
-    group.create_dataset(
-        "runtime_seconds", data=stage.forward.runtime_seconds.astype(np.float32)
-    )
+    group.create_dataset("runtime_seconds", data=stage.forward.runtime_seconds.astype(np.float32))
     group.create_dataset("cache_hit", data=stage.forward.cache_hit)
     group.create_dataset("returncode", data=stage.forward.returncode)
     group.create_dataset("stderr", data=np.asarray(stage.forward.stderr, dtype=string_dtype))
@@ -126,9 +126,7 @@ def main() -> int:
     parser.add_argument("--git-commit")
     args = parser.parse_args()
     method: Method = args.method
-    parameterization_label = _resolve_parameterization_label(
-        method, args.parameterization_label
-    )
+    parameterization_label = _resolve_parameterization_label(method, args.parameterization_label)
     if args.batch_size < 1:
         raise ValueError("batch size must be positive")
     if method == "fm" and not all((args.fm_config, args.checkpoint, args.training_data)):
@@ -143,6 +141,7 @@ def main() -> int:
         raise ValueError("prior artifact has fewer fields than the configured ensemble")
 
     parameterization: dict[str, object] = {}
+    pca_components: np.ndarray | None = None
     decode: Callable[[np.ndarray], np.ndarray]
     if method == "raw":
         initial_parameters = initial_fields[:, active]
@@ -152,6 +151,7 @@ def main() -> int:
             initial_fields[:, active], variance_fraction=config.pca_variance_fraction
         )
         initial_parameters = pca.encode(initial_fields[:, active])
+        pca_components = pca.components
 
         def decode(parameters: np.ndarray) -> np.ndarray:
             return embed_active(pca.decode(parameters), active)
@@ -189,14 +189,23 @@ def main() -> int:
             parameterization.update(
                 {
                     "latent_rank": latent_pca.rank,
-                    "latent_explained_variance_fraction": (
-                        latent_pca.explained_variance_fraction
-                    ),
+                    "latent_explained_variance_fraction": (latent_pca.explained_variance_fraction),
                     "matched_field_pca_rank": field_pca.rank,
                 }
             )
         else:
             decode = fm_decode
+
+    decoder: Callable[[np.ndarray], np.ndarray | EggDecodedFields] = decode
+    bound_policy = None
+    if config.logk_bounds is not None:
+        decoder = partial(
+            decode_bounded_fields,
+            decode=decode,
+            bounds=config.logk_bounds,
+            active=active,
+        )
+        bound_policy = "decoded_field_clamp"
 
     truth = extract_egg_observations(
         args.truth_case,
@@ -213,20 +222,25 @@ def main() -> int:
     observation = truth_data + np.random.default_rng(observation_seed).normal(scale=sigma)
     covariance = np.diag(sigma**2)
     localization = None
+    localization_projection = None
     if config.localization.enabled:
-        deck = (args.template_dir / "EGG.DATA").read_text(
-            encoding="utf-8", errors="replace"
-        )
+        deck = (args.template_dir / "EGG.DATA").read_text(encoding="utf-8", errors="replace")
         well_locations = parse_egg_well_locations(deck)
-        localization = well_observation_localization(
+        cell_localization = well_observation_localization(
             active,
             producer_locations_yx=tuple(well_locations[name] for name in EGG_PRODUCERS),
-            observation_times=int(
-                round(config.history_end_day / config.observation_interval_days)
-            ),
+            observation_times=int(round(config.history_end_day / config.observation_interval_days)),
             cell_size_yx_m=config.localization.cell_size_yx_m,
             radius_m=config.localization.radius_m,
         )
+        if method == "pca":
+            if pca_components is None:
+                raise RuntimeError("PCA localization requires fitted components")
+            localization = project_localization_to_pca(cell_localization, pca_components)
+            localization_projection = "pca_squared_loading_projection"
+        else:
+            localization = cell_localization
+            localization_projection = "cell_space"
     evaluator = partial(
         run_egg_forward,
         template_dir=args.template_dir,
@@ -251,7 +265,9 @@ def main() -> int:
         "prior_sha256": sha256_file(args.prior_fields),
         "simulator_id": args.simulator_id,
         "localization": config.localization,
+        "localization_projection": localization_projection,
         "fm_latent_pca": config.fm_latent_pca,
+        "bound_policy": bound_policy,
         **parameterization,
     }
     if args.parameterization_label is not None:
@@ -275,13 +291,22 @@ def main() -> int:
         output.attrs["localization_radius_m"] = (
             config.localization.radius_m if config.localization.enabled else np.nan
         )
+        output.attrs["localization_projection"] = (
+            "" if localization_projection is None else localization_projection
+        )
         output.attrs["latent_rank"] = 0 if latent_rank is None else latent_rank
+        output.attrs["logk_bounds"] = (
+            np.asarray(config.logk_bounds, dtype=np.float64)
+            if config.logk_bounds is not None
+            else np.asarray([], dtype=np.float64)
+        )
+        output.attrs["bound_policy"] = "" if bound_policy is None else bound_policy
         output.create_dataset("truth_data", data=truth_data.astype(np.float32))
         output.create_dataset("observation", data=observation.astype(np.float32))
         output.create_dataset("sigma", data=sigma.astype(np.float32))
         stages = run_egg_esmda(
             initial_parameters,
-            decode=decode,
+            decode=decoder,
             evaluator=evaluator,
             observation=observation,
             observation_covariance=covariance,
@@ -316,13 +341,12 @@ def main() -> int:
                 "fopt": {
                     **quantiles,
                     "truth": truth_fopt,
-                    "covered": coverage(
-                        truth_fopt, lower=quantiles["P10"], upper=quantiles["P90"]
-                    ),
+                    "covered": coverage(truth_fopt, lower=quantiles["P10"], upper=quantiles["P90"]),
                 },
                 "mean_normalized_data_misfit": float(np.mean(misfits)),
                 "cache_hits": int(stage.forward.cache_hit.sum()),
                 "runtime_seconds_sum": float(stage.forward.runtime_seconds.sum()),
+                "clipped_fraction": stage.clipped_fraction,
                 **ensemble_collapse_diagnostics(
                     stage.fields,
                     prior_fields=stages[0].fields,
@@ -331,9 +355,12 @@ def main() -> int:
             }
         )
 
-    git_commit = args.git_commit or subprocess.run(
-        ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
-    ).stdout.strip()
+    git_commit = (
+        args.git_commit
+        or subprocess.run(
+            ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+        ).stdout.strip()
+    )
     record = create_artifact_record(
         args.output,
         root=Path.cwd(),
@@ -361,11 +388,15 @@ def main() -> int:
             fm_latent_pca=config.fm_latent_pca,
         ),
         "n_assimilations": len(config.inflations),
+        "ensemble_size": config.ensemble_size,
         "localization_enabled": config.localization.enabled,
         "localization_radius_m": (
             config.localization.radius_m if config.localization.enabled else None
         ),
+        "localization_projection": localization_projection,
         "latent_rank": latent_rank,
+        "logk_bounds": config.logk_bounds,
+        "bound_policy": bound_policy,
         "n_sim": sum(len(stage.fields) for stage in stages),
         "n_failed": sum(int(np.sum(stage.forward.status != "ok")) for stage in stages),
         "stages": stage_reports,

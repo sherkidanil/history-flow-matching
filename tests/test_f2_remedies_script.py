@@ -12,13 +12,14 @@ from fmgeo.artifacts import sha256_file
 
 repository = Path(__file__).parents[1]
 sys.path.insert(0, str(repository / "scripts"))
-from f2_build_remedies import _build_rows  # noqa: E402
+from f2_build_remedies import _build_rows, _map_inversions, _map_reports  # noqa: E402
 
 sys.path.pop(0)
 
 
-def _write_inputs(root: Path, method: str) -> tuple[Path, Path]:
-    artifact = root / f"{method}.h5"
+def _write_inputs(root: Path, method: str, label: str | None = None) -> tuple[Path, Path]:
+    resolved_label = method if label is None else label
+    artifact = root / f"{resolved_label}.h5"
     fields = np.asarray(
         [
             [[[0.0, 2.0]]],
@@ -30,7 +31,7 @@ def _write_inputs(root: Path, method: str) -> tuple[Path, Path]:
     with h5py.File(artifact, "w") as handle:
         handle.attrs["method"] = method
         handle.attrs["strategy"] = "augmentation"
-        handle.attrs["parameterization_label"] = f"{method}_na8"
+        handle.attrs["parameterization_label"] = resolved_label
         handle.create_dataset("observation", data=[1.0])
         handle.create_dataset("truth_data", data=[1.0])
         handle.create_dataset("sigma", data=[1.0])
@@ -38,17 +39,19 @@ def _write_inputs(root: Path, method: str) -> tuple[Path, Path]:
         group.create_dataset("logk", data=fields)
         group.create_dataset("simulated_data", data=np.arange(4.0)[:, None])
         group.create_dataset("fopt", data=[1.0, 2.0, 3.0, 4.0])
-    report = root / f"{method}.json"
+    report = root / f"{resolved_label}.json"
     report.write_text(
         json.dumps(
             {
                 "method": method,
+                "parameterization_label": resolved_label,
                 "strategy": "augmentation",
                 "remedy": "assimilation_steps",
                 "n_assimilations": 8,
                 "localization_enabled": False,
                 "localization_radius_m": None,
                 "latent_rank": None,
+                "logk_bounds": [2.0, 11.0],
                 "n_sim": 900,
                 "n_failed": 0,
                 "truth_terminal_fopt": 2.5,
@@ -63,6 +66,7 @@ def _write_inputs(root: Path, method: str) -> tuple[Path, Path]:
                         "mean_field_spread": 0.5,
                         "relative_field_shift_from_prior": 0.25,
                         "effective_ensemble_members": 3.0,
+                        "clipped_fraction": 0.125,
                     }
                 ],
             }
@@ -93,8 +97,34 @@ def test_build_remedy_rows_combines_science_collapse_and_provenance(
     assert all(row["n_assimilations"] == 8 for row in rows)
     assert all(row["ensemble_size"] == 4 for row in rows)
     assert all(row["effective_ensemble_members"] == 3.0 for row in rows)
+    assert all(row["effective_ensemble_fraction"] == 0.75 for row in rows)
+    assert all(row["logk_lower_bound"] == 2.0 for row in rows)
+    assert all(row["logk_upper_bound"] == 11.0 for row in rows)
+    assert all(row["clipped_fraction"] == 0.125 for row in rows)
     assert all(row["source_git_commit"] == "c" * 40 for row in rows)
     assert all(row["derived_git_commit"] == "d" * 40 for row in rows)
+
+
+def test_build_remedy_rows_marks_unbounded_clipping_as_missing(tmp_path: Path) -> None:
+    artifact, report = _write_inputs(tmp_path, "raw")
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    payload["logk_bounds"] = None
+    payload["stages"][0].pop("clipped_fraction")
+    report.write_text(json.dumps(payload), encoding="utf-8")
+
+    row = _build_rows(
+        {"raw": artifact},
+        reports={"raw": report},
+        truth=np.asarray([[[[0.0, 2.0]]]]),
+        active=np.ones((1, 1, 2), dtype=bool),
+        threshold=1.0,
+        wells={"INJECT1": (0, 0), "PROD1": (0, 1)},
+        derived_git_commit="d" * 40,
+    )[0]
+
+    assert row["clipped_fraction"] is None
+    assert row["logk_lower_bound"] is None
+    assert row["logk_upper_bound"] is None
 
 
 def test_build_remedy_rows_accepts_two_labeled_raw_variants(tmp_path: Path) -> None:
@@ -128,3 +158,15 @@ def test_build_remedy_rows_accepts_two_labeled_raw_variants(tmp_path: Path) -> N
 
     assert {row["variant"] for row in rows} == set(inversions)
     assert [row["parameterization"] for row in rows].count("raw") == 2
+
+
+def test_cli_maps_multiple_fm_runs_by_parameterization_label(tmp_path: Path) -> None:
+    inputs = [
+        _write_inputs(tmp_path, "fm", label) for label in ("fm_na8", "fm_na16", "fm_na8_n200")
+    ]
+
+    inversions = _map_inversions([artifact for artifact, _ in inputs])
+    reports = _map_reports([report for _, report in inputs])
+
+    assert list(inversions) == ["fm_na8", "fm_na16", "fm_na8_n200"]
+    assert list(reports) == ["fm_na8", "fm_na16", "fm_na8_n200"]

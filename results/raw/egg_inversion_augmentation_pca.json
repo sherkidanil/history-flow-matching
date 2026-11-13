@@ -1,11 +1,11 @@
 {
   "artifact": {
-    "config_hash": "4cd0e90f32fed9a2d382f18e542adba6689b92534aaa4373c622a928b2f6c944",
-    "created_at": "2026-09-15T13:26:29.380434Z",
+    "config_hash": "bb5098f6e622eb5eacb1447b4819e3cf384d3d3acdcbe6eefd93527834d17936",
+    "created_at": "2026-09-24T17:52:31.424295Z",
     "dtype": "float32",
-    "git_commit": "8feec05e63599aa6b413edc332d2625828f92214",
+    "git_commit": "5b1bb96ec84d9c204ad997911bbb8f05e5d8c022",
     "path": "artifacts/egg_inversion_augmentation_pca.h5",
-    "sha256": "5660fd4abc89298edeaabc03a64eab911066eb016be431e515456433da0a7924",
+    "sha256": "066f76b5aadb1e916dee609ff7b54d0c8da6fb2b06f67c7f74aeac7ff9c127f9",
     "shape": [
       5,
       100,
@@ -13,11 +13,19 @@
       60,
       60
     ],
-    "size_bytes": 38290647
+    "size_bytes": 38291703
   },
   "benchmark": "Egg",
-  "config_hash": "4cd0e90f32fed9a2d382f18e542adba6689b92534aaa4373c622a928b2f6c944",
+  "bound_policy": null,
+  "config_hash": "bb5098f6e622eb5eacb1447b4819e3cf384d3d3acdcbe6eefd93527834d17936",
+  "ensemble_size": 100,
+  "latent_rank": null,
+  "localization_enabled": false,
+  "localization_projection": null,
+  "localization_radius_m": null,
+  "logk_bounds": null,
   "method": "pca",
+  "n_assimilations": 4,
   "n_failed": 0,
   "n_sim": 500,
   "observation_count": 160,
@@ -26,10 +34,14 @@
     "pca_explained_variance_fraction": 0.9528626836160355,
     "pca_rank": 85
   },
+  "parameterization_label": "pca",
   "prior_sha256": "eff49cf09c0794d4c1d510811820345ae2c1a5fcb8e575c57d7cc7abe563dd48",
+  "remedy": "none",
   "stages": [
     {
-      "cache_hits": 0,
+      "cache_hits": 100,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 65.07951356355869,
       "fopt": {
         "P10": 496925.51875,
         "P50": 501356.0,
@@ -37,12 +49,16 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.7363094720137316,
       "mean_normalized_data_misfit": 135.2560103525796,
-      "runtime_seconds_sum": 5501.106440410018,
+      "relative_field_shift_from_prior": 0.0,
+      "runtime_seconds_sum": 6550.754490636289,
       "stage": 0
     },
     {
       "cache_hits": 0,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 50.80502333765415,
       "fopt": {
         "P10": 502670.65625,
         "P50": 506139.609375,
@@ -50,12 +66,16 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.6082260689822687,
       "mean_normalized_data_misfit": 11.933877744402034,
-      "runtime_seconds_sum": 5432.359284631908,
+      "relative_field_shift_from_prior": 0.0850123471051126,
+      "runtime_seconds_sum": 5896.131097339094,
       "stage": 1
     },
     {
       "cache_hits": 0,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 43.77078177905257,
       "fopt": {
         "P10": 504392.615625,
         "P50": 505865.453125,
@@ -63,12 +83,16 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.5101561716608741,
       "mean_normalized_data_misfit": 4.753611432860644,
-      "runtime_seconds_sum": 3924.9520369693637,
+      "relative_field_shift_from_prior": 0.10900761225710803,
+      "runtime_seconds_sum": 6252.716701775789,
       "stage": 2
     },
     {
       "cache_hits": 0,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 39.46162954785434,
       "fopt": {
         "P10": 503579.240625,
         "P50": 504883.15625,
@@ -76,12 +100,16 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.45215186083935666,
       "mean_normalized_data_misfit": 2.757747993550861,
-      "runtime_seconds_sum": 3900.294668368995,
+      "relative_field_shift_from_prior": 0.12230922573844108,
+      "runtime_seconds_sum": 5915.1489268913865,
       "stage": 3
     },
     {
       "cache_hits": 0,
+      "clipped_fraction": 0.0,
+      "effective_ensemble_members": 36.62301056837487,
       "fopt": {
         "P10": 503833.58125,
         "P50": 504820.609375,
@@ -89,8 +117,10 @@
         "covered": true,
         "truth": 505246.84375
       },
+      "mean_field_spread": 0.40503097973951985,
       "mean_normalized_data_misfit": 1.8851961727427389,
-      "runtime_seconds_sum": 3899.104815378785,
+      "relative_field_shift_from_prior": 0.12927244945521785,
+      "runtime_seconds_sum": 6120.2917040959,
       "stage": 4
     }
   ],

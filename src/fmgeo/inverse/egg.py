@@ -56,6 +56,7 @@ class EggInversionConfig(StrictModel):
     min_free_disk_gb: float = Field(ge=0)
     localization: EggLocalizationConfig = EggLocalizationConfig()
     fm_latent_pca: bool = False
+    logk_bounds: tuple[float, float] | None = None
 
     @model_validator(mode="after")
     def validate_protocol(self) -> EggInversionConfig:
@@ -65,6 +66,10 @@ class EggInversionConfig(StrictModel):
         intervals = self.history_end_day / self.observation_interval_days
         if not np.isclose(intervals, round(intervals), rtol=0.0, atol=1e-10):
             raise ValueError("history end must be divisible by observation interval")
+        if self.logk_bounds is not None:
+            lower, upper = self.logk_bounds
+            if not np.all(np.isfinite(self.logk_bounds)) or lower >= upper:
+                raise ValueError("logk bounds must be finite with lower less than upper")
         return self
 
     @property
@@ -140,18 +145,54 @@ def evaluate_egg_ensemble(
 
 
 @dataclass(frozen=True)
+class EggDecodedFields:
+    """Effective decoded fields and metadata used by the forward model."""
+
+    fields: NDArray[np.float64]
+    clipped_fraction: float = 0.0
+
+
+def decode_bounded_fields(
+    parameters: NDArray[np.float64],
+    *,
+    decode: Callable[[NDArray[np.float64]], NDArray[np.float64]],
+    bounds: tuple[float, float],
+    active: ArrayLike,
+) -> EggDecodedFields:
+    """Decode parameters and clamp active values as part of the decoder."""
+
+    fields = np.asarray(decode(parameters), dtype=np.float64)
+    active_mask = np.asarray(active, dtype=bool)
+    if fields.ndim != 4 or fields.shape[0] != len(parameters):
+        raise ValueError("decoded fields must have ensemble-first 4D shape")
+    if fields.shape[1:] != active_mask.shape:
+        raise ValueError("active mask shape must match decoded fields")
+    lower, upper = bounds
+    if not np.isfinite((lower, upper)).all() or lower >= upper:
+        raise ValueError("field bounds must be finite with lower less than upper")
+    active_values = fields[:, active_mask]
+    clipped_fraction = float(np.mean((active_values < lower) | (active_values > upper)))
+    bounded = fields.copy()
+    bounded[:, active_mask] = np.clip(active_values, lower, upper)
+    return EggDecodedFields(fields=bounded, clipped_fraction=clipped_fraction)
+
+
+@dataclass(frozen=True)
 class EggAssimilationStage:
     """One complete, index-stable ES-MDA stage."""
 
     parameters: NDArray[np.float64]
     fields: NDArray[np.float64]
     forward: EggEnsembleForwardResult
+    clipped_fraction: float = 0.0
 
 
 def run_egg_esmda(
     initial_parameters: ArrayLike,
     *,
-    decode: Callable[[NDArray[np.float64]], NDArray[np.float64]],
+    decode: Callable[
+        [NDArray[np.float64]], NDArray[np.float64] | EggDecodedFields
+    ],
     evaluator: Callable[[NDArray[np.float64]], ForwardResult],
     observation: ArrayLike,
     observation_covariance: ArrayLike,
@@ -170,15 +211,26 @@ def run_egg_esmda(
         raise ValueError("initial parameters must be a finite ensemble-first matrix")
     stages: list[EggAssimilationStage] = []
     for stage_index in range(len(inflation_schedule) + 1):
-        fields = np.asarray(decode(parameters), dtype=np.float64)
+        decoded = decode(parameters)
+        if isinstance(decoded, EggDecodedFields):
+            fields = np.asarray(decoded.fields, dtype=np.float64)
+            clipped_fraction = decoded.clipped_fraction
+        else:
+            fields = np.asarray(decoded, dtype=np.float64)
+            clipped_fraction = 0.0
         if fields.ndim != 4 or fields.shape[0] != len(parameters):
             raise ValueError("decoded fields must have ensemble-first 4D shape")
+        if not np.all(np.isfinite(fields)):
+            raise ValueError("decoded fields must be finite")
+        if not 0.0 <= clipped_fraction <= 1.0:
+            raise ValueError("clipped fraction must be between zero and one")
         forward = evaluate_egg_ensemble(fields, evaluator=evaluator, workers=workers)
         failed = np.flatnonzero(forward.status != "ok")
         stage = EggAssimilationStage(
             parameters=parameters.copy(),
             fields=fields.copy(),
             forward=forward,
+            clipped_fraction=clipped_fraction,
         )
         stages.append(stage)
         if on_stage is not None:

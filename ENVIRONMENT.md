@@ -98,6 +98,21 @@ the remote repository occupied 2.4 GiB, the transient work root 5.4 MiB, and
 `/mnt/local` had 30 GiB free. The local checkout occupied 3.1 GiB, including
 1.9 GiB of artifacts and 3.6 MiB of result files.
 
+Session-3 artifact-only diagnostics ran on 2026-09-17 without new OPM forward
+models. The five completed remedy artifacts were retrieved to the arm64 Mac
+and verified against their reported SHA-256 hashes. The out-of-sample
+linearity analysis used the existing PyTorch 2.4.1 CUDA 12.1 image on idle
+cluster GPU 4; its deterministic five folds use seed `20260915`. The resulting
+stage-0 OOS R-squared means were 0.30930 for raw, 0.30657 for PCA, and
+-0.48889 for FM.
+
+Before any G4 localization run, measured `/mnt/local` free space was
+22,141,898,752 bytes and the remote fix-session directory occupied
+9,481,468,893 bytes. This leaves only a narrow margin above the mandatory
+20 GiB simulator reserve, so new forward runs require storage cleanup first.
+The local worktree occupied 4,048,820 KiB, including 2,715,860 KiB of ignored
+artifacts and 3,932 KiB of results, below the 40 GiB project limit.
+
 <!-- BEGIN AUTO-GENERATED M0 PROBE -->
 ## Latest measured M0 probe
 
